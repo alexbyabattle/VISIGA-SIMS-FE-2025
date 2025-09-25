@@ -1,0 +1,19 @@
+// Asset exports
+export { default as askofu } from './askofu.png';
+export { default as askofu3 } from './askofu3.png';
+export { default as bluelinesimage } from './bluelinesimage.png';
+export { default as books } from './books.png';
+export { default as cathedral5 } from './cathedral5.png';
+export { default as circleimage } from './circleimage.png';
+export { default as gclaheader } from './gcla-header.png';
+export { default as gcla } from './gcla.png';
+export { default as gclatopimage } from './gclatopimage.png';
+export { default as george } from './george.png';
+export { default as hailmary } from './hailmary.png';
+export { default as lineofcodes } from './lineofcodes.png';
+export { default as pcimg } from './pcimg.png';
+export { default as serverimage } from './serverimage.png';
+export { default as visiga } from './visiga.png';
+export { default as visigalogo } from './visigalogo.png';
+export { default as waseminari } from './waseminari.png';
+export { default as defaultProfile } from './visigalogo.png';

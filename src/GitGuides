@@ -1,0 +1,16 @@
+
+
+
+
+git init
+
+git add .
+
+git commit -m "Initial project commit"         NOTE  everytime  you want  to commit  after  coding    change the                                            commit dont forget  git add . above
+
+
+git remote add origin  https://github.com/alexbyabattle/ST_MARY-S_SIMS_FE.git    
+if  it  says  origin already exists  skip  it   
+
+
+git push -u origin main                  push   
