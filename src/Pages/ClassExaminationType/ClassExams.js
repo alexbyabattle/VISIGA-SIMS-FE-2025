@@ -45,7 +45,7 @@ const ClassExams = () => {
   
   const openCreateDialog = () => setIsDialogOpen(true);
   const openDeleteDialog = (examType) => {
-    // Double-check permissions before opening dialog
+    
     if (!canDelete) {
       console.warn('User does not have permission to delete results');
       return;
