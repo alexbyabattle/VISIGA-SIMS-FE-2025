@@ -53,7 +53,7 @@ const StudentResults = () => {
 
   const groupResults = (data) => {
     const subjects = [];
-    let studentName = "", examinationType = "", className = "", position = "", totalStudents = "";
+    let studentName = "", examinationType = "", className = "", position = "", totalStudents = "", combination = "";
 
     data.forEach(item => {
       examinationType = item.examinationType || "";
@@ -61,6 +61,7 @@ const StudentResults = () => {
       className = item.className || "";
       position = item.position || "";
       totalStudents = item.totalStudents || "";
+      combination = item.combination || "";
       subjects.push({
         subject: item.subjectName || "Unknown Subject",
         code: item.subjectCode || "",
@@ -83,7 +84,8 @@ const StudentResults = () => {
       average: average.toFixed(2), // ✅ Ensure two decimal places
       status: "PASS",
       totalMarks,
-      subjects
+      subjects,
+      combination: combination || "N/A"
     };
   };
 
@@ -107,6 +109,10 @@ const StudentResults = () => {
               <Box>
                 <Typography variant="subtitle2" fontWeight="bold">EXAMINATION</Typography>
                 <Typography variant="body1">{studentResult.examinationType}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="subtitle2" fontWeight="bold">COMBINATION</Typography>
+                <Typography variant="body1">{studentResult.combination}</Typography>
               </Box>
             </Box>
           </Card>

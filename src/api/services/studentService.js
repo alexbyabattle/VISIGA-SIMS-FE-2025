@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import axios from 'axios';
 import axiosInstance from '../axiosInstance';
 import { endpoints } from '../endPoints';
 import { Response, ErrorResponse, RequestConfig } from '../api-Utils';
@@ -211,28 +212,102 @@ const useStudentService = () => {
     };
 
 
+    // Test function to check backend connectivity
+    const testBackendConnection = async () => {
+        try {
+            console.log('Testing backend connection...');
+            // Test with a simple endpoint that doesn't require authentication
+            const response = await axiosInstance.get('/auth/authenticate', {
+                validateStatus: function (status) {
+                    // Accept 401 as it means the endpoint exists but requires auth
+                    return status === 200 || status === 401;
+                }
+            });
+            console.log('Backend is accessible:', response.status);
+            return true;
+        } catch (error) {
+            console.error('Backend connection failed:', error);
+            return false;
+        }
+    };
+
     const uploadStudentImage = async (file, studentId) => {
         if (!studentId || !file) {
-            toast.error('Student ID or file is missing');
-            return;
+            const errorMsg = 'Student ID or file is missing';
+            toast.error(errorMsg);
+            throw new Error(errorMsg);
         }
 
-        const config = {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        };
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            const errorMsg = 'Please select a valid image file';
+            toast.error(errorMsg);
+            throw new Error(errorMsg);
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            const errorMsg = 'File size must be less than 5MB';
+            toast.error(errorMsg);
+            throw new Error(errorMsg);
+        }
+
+        console.log('Uploading image for student:', studentId);
+        console.log('File details:', {
+            name: file.name,
+            size: file.size,
+            type: file.type
+        });
 
         const formData = new FormData();
-        formData.append('id', studentId);
         formData.append('file', file);
 
+        // Log FormData contents for debugging
+        console.log('FormData contents:');
+        for (let [key, value] of formData.entries()) {
+            console.log(key, value);
+        }
+
         try {
-            await axiosInstance.put(`${endpoints.students.uploadStudentPhoto}`, formData, config);
+            // Use the correct endpoint with student ID in the URL
+            const endpoint = endpoints.students.uploadStudentPhoto.replace('{id}', studentId);
+            console.log('Using endpoint:', endpoint);
+            
+            // Create a new axios instance without authentication for this specific request
+            const uploadAxios = axios.create({
+                baseURL: 'http://localhost:8086/api/v1',
+                timeout: 30000
+            });
+            
+            const response = await uploadAxios.put(endpoint, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                }
+            });
+            
+            console.log('Upload response:', response);
             toast.success('Profile picture updated successfully');
+            return response.data;
         } catch (error) {
-            toast.error('Error updating profile picture');
-            console.error('Error updating profile picture:', error);
+            console.error('Full error details:', error);
+            console.error('Error response:', error.response);
+            console.error('Error status:', error.response?.status);
+            console.error('Error data:', error.response?.data);
+            
+            let errorMsg = 'Error updating profile picture';
+            
+            if (error.response?.status === 500) {
+                errorMsg = 'Server error occurred. Please check if the backend service is running and the endpoint is correct.';
+            } else if (error.response?.status === 404) {
+                errorMsg = 'Upload endpoint not found. Please check the API configuration.';
+            } else if (error.response?.status === 413) {
+                errorMsg = 'File too large. Please select a smaller image.';
+            } else if (error.response?.data?.message) {
+                errorMsg = error.response.data.message;
+            }
+            
+            toast.error(errorMsg);
+            throw error;
         }
     };
 
@@ -252,6 +327,7 @@ const useStudentService = () => {
         generateStudentsNumberByClassId,
         uploadStudentImage,
         loadStudentParentsDetails,
+        testBackendConnection,
     };
 };
 

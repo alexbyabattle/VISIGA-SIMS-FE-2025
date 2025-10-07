@@ -100,7 +100,7 @@ const Dashboard = () => {
                 title="VIEW SCHOOL TIMETABLE"
                 subtitle="View school timetable "
                 progress={
-                  <Button variant="contained" color="secondary" onClick={openEditSeminariansInformation}>
+                  <Button variant="contained" color="secondary" onClick={openSchoolTimetable}>
                     VIEW
                   </Button>
                 }
@@ -114,7 +114,7 @@ const Dashboard = () => {
                 title="FEE INFO"
                 subtitle=" View school fee , paid amount and amount left"
                 progress={
-                  <Button variant="contained" color="secondary" onClick={openEditSeminariansInformation}>
+                  <Button variant="contained" color="secondary" >
                     VIEW FEE
                   </Button>
                 }

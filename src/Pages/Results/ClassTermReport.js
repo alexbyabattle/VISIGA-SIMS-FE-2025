@@ -163,6 +163,17 @@ const ClassTermReport = () => {
         flex: 1,
         minWidth: 150,
       },
+      {
+        field: "combination",
+        headerName: "Combination",
+        flex: 1,
+        minWidth: 150,
+        renderCell: ({ row }) => (
+          <Typography variant="body2" fontWeight="bold">
+            {row.combination || "N/A"}
+          </Typography>
+        ),
+      },
     ];
 
     // Add only allowed subject columns

@@ -31,6 +31,7 @@ import dayjs from 'dayjs';
 import { getUserFromCookies } from '../../utils/Cookie-utils';
 import useUserService from '../../api/services/userService';
 import EditPictureDialog from './EditPictureDialog';
+import ChangePasswordDialog from './ChangePasswordDialog';
 import * as image from '../../assets';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Header from "../../components/Header";
@@ -38,11 +39,13 @@ import Header from "../../components/Header";
 const ProfileDetails = () => {
   const { userId } = useParams();
   const [userData, setUserData] = useState(null);
-  const [selectedUserId, setSelectedUserId] = useState(null);
   const [changeImageDialogOpen, setChangeImageDialogOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const userService = useUserService();
   const { isLoading } = userService;
+
+  // Debug logging
+  console.log('ProfileDetails - passwordDialogOpen:', passwordDialogOpen);
 
   
 
@@ -133,11 +136,11 @@ const ProfileDetails = () => {
                     <Box sx={{ position: 'relative', display: 'inline-block' }}>
                       <Avatar
                         alt={userData.name || 'Profile Picture'}
-                        src={userData.photoUrl || userData.profilePicture}
+                        src={userData.photoUrl ? `${process.env.REACT_APP_API_URL || 'http://localhost:8086'}${userData.photoUrl}` : null}
                         sx={{
                           width: 100,
                           height: 100,
-                          border: userData.photoUrl || userData.profilePicture ? '2px solid #ccc' : '2px solid red',
+                          border: userData.photoUrl ? '2px solid #ccc' : '2px solid red',
                         }}
                       />
                       <Tooltip title="Choose image">
@@ -169,7 +172,11 @@ const ProfileDetails = () => {
                       variant="contained"
                       color="secondary"
                       sx={{ mt: { xs: 2, md: 0 } }}
-                      onClick={() => setPasswordDialogOpen(true)}
+                      onClick={() => {
+                        
+                        
+                        setPasswordDialogOpen(true);
+                      }}
                     >
                       Change Password
                     </Button>
@@ -224,18 +231,17 @@ const ProfileDetails = () => {
         <EditPictureDialog
           open={changeImageDialogOpen}
           onClose={() => setChangeImageDialogOpen(false)}
-          id={selectedUserId}
           loadUserDetails={loadUserDetails}
         />
 
-        {/* <ChangePassword
+        <ChangePasswordDialog
           open={passwordDialogOpen}
           onClose={() => setPasswordDialogOpen(false)}
           onSuccess={() => {
             setPasswordDialogOpen(false);
             loadUserDetails();
           }}
-        */ }
+        />
 
       </Box>
     </Box>

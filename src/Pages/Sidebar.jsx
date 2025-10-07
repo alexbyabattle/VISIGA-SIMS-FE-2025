@@ -9,7 +9,8 @@ import {
   ReportProblemOutlined, 
   CheckCircleOutline, 
   Report,
-  Cancel 
+  Cancel,
+  AssessmentOutlined
 } from "@mui/icons-material";
 import { Link } from "react-router-dom";
 import { tokens } from "../theme";
@@ -133,6 +134,7 @@ const SidebarComponent = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 <Item title="SUBJECTS" to="/subjects" icon={<Report />} selected={selected} setSelected={setSelected} closeSidebar={closeSidebar} />
                 <Item title="EXAMINATIONS" to="/examinations" icon={<RequestPageOutlined />} selected={selected} setSelected={setSelected} closeSidebar={closeSidebar} />
                 <Item title="TERM" to="/terms" icon={<RequestPageOutlined />} selected={selected} setSelected={setSelected} closeSidebar={closeSidebar} />
+                <Item title="STUDENT-EVALUATION" to="/students-evaluation-table" icon={<AssessmentOutlined />} selected={selected} setSelected={setSelected} closeSidebar={closeSidebar} />
               </>
             )}
             {role === "TEACHER" && (

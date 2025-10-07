@@ -146,6 +146,7 @@ const ClassResults = () => {
       studentName: studentData.studentName,
       studentNumber: studentData.studentNumber,
       position: studentData.position,
+      combination: studentData.combination || "N/A",
       totalMarks,
       average,
       subjects: finalSubjects,
@@ -162,6 +163,7 @@ const ClassResults = () => {
           studentName: item.studentName,
           studentNumber: item.studentNumber,
           position: item.position,
+          combination: item.combination || "",
           subjects: {},
         };
       }
@@ -271,6 +273,15 @@ const ClassResults = () => {
         minWidth: 150,
         renderCell: ({ row }) => (
           <Typography fontWeight="bold">{row.studentNumber}</Typography>
+        ),
+      },
+      {
+        field: "combination",
+        headerName: "Combination",
+        flex: 1,
+        minWidth: 150,
+        renderCell: ({ row }) => (
+          <Typography fontWeight="bold">{row.combination}</Typography>
         ),
       },
     ];

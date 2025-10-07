@@ -5,12 +5,15 @@ import {
   Card,
   Divider,
   useTheme,
+  Button,
+  IconButton,
 } from "@mui/material";
 import { tokens } from "../../theme";
 import { useParams } from "react-router-dom";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import * as image from "../../assets";
 import useStudentEvaluationService from "../../api/services/StudentEvaluationService";
+import PrintIcon from "@mui/icons-material/Print";
 
 const StudentEvaluationReport = () => {
   const { studentId, termId } = useParams();
@@ -23,11 +26,49 @@ const StudentEvaluationReport = () => {
 
   const { getEvaluationByTermIdAndStudentId } = useStudentEvaluationService();
 
+  const handlePrint = () => {
+    // Add print-specific styles
+    const printStyles = `
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .printable-content, .printable-content * {
+          visibility: visible;
+        }
+        .printable-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        @page {
+          margin: 0.5in;
+          size: A4;
+        }
+      }
+    `;
+    
+    // Create and inject print styles
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = printStyles;
+    document.head.appendChild(styleSheet);
+    
+    window.print();
+    
+    // Clean up
+    document.head.removeChild(styleSheet);
+  };
+
   useEffect(() => {
     const loadReport = async () => {
       try {
         setLoading(true);
         const data = await getEvaluationByTermIdAndStudentId(termId, studentId);
+        console.log("Student evaluation data:", data);
+        console.log("Student photo URL:", data.studentPhotoUrl);
+        console.log("Student name:", data.studentName);
+        console.log("All data fields:", Object.keys(data));
         setReport(data);
       } catch (error) {
         console.error("Error loading student evaluation report:", error);
@@ -103,16 +144,66 @@ const StudentEvaluationReport = () => {
   ];
 
   return (
-    <Box sx={{ ml: '20px', mr: '20px' }}>
+    <Box 
+      className="printable-content"
+      sx={{ 
+        ml: '20px', 
+        mr: '20px',
+        '@media print': {
+          ml: 0,
+          mr: 0,
+          width: '100%',
+          maxWidth: 'none',
+          padding: '20px',
+          backgroundColor: 'white',
+          color: 'black',
+          '& *': {
+            color: 'black !important',
+            backgroundColor: 'transparent !important',
+            boxShadow: 'none !important',
+          }
+        }
+      }}
+    >
+      {/* Print Button - Hidden in print */}
+      <Box 
+        sx={{ 
+          mb: 2, 
+          display: 'flex', 
+          justifyContent: 'flex-end',
+          '@media print': { display: 'none' }
+        }}
+      >
+        <Button
+          variant="contained"
+          startIcon={<PrintIcon />}
+          onClick={handlePrint}
+          sx={{
+            backgroundColor: colors.blueAccent[500],
+            '&:hover': {
+              backgroundColor: colors.blueAccent[600],
+            }
+          }}
+        >
+          Print Report
+        </Button>
+      </Box>
       {/* Header */}
       <Box
         height="auto"
         display="flex"
         flexDirection="row"
         justifyContent="space-between"
-        border={`1px solid ${borderColor}`}
-        mb={2}
+        border={`2px solid ${borderColor}`}
+        mb={3}
         flexWrap="wrap"
+        sx={{
+          '@media print': {
+            border: '2px solid black',
+            pageBreakInside: 'avoid',
+            marginBottom: '20px'
+          }
+        }}
       >
         {/* Left Section */}
         <Box
@@ -216,9 +307,27 @@ const StudentEvaluationReport = () => {
             <Box sx={{ position: 'relative', display: 'inline-block' }}>
               <Box
                 component="img"
-                src={image.books}
-                alt="student"
-                sx={{ width: 100, height: 100, borderRadius: '50%' }}
+                src={
+                  report.studentPhotoUrl 
+                    ? `${process.env.REACT_APP_API_URL || 'http://localhost:8086'}${report.studentPhotoUrl}` 
+                    : report.student?.photoUrl 
+                    ? `${process.env.REACT_APP_API_URL || 'http://localhost:8086'}${report.student.photoUrl}`
+                    : report.photoUrl
+                    ? `${process.env.REACT_APP_API_URL || 'http://localhost:8086'}${report.photoUrl}`
+                    : image.books
+                }
+                alt={report.studentName || 'Student Picture'}
+                sx={{ 
+                  width: 100, 
+                  height: 100, 
+                  borderRadius: '50%',
+                  border: (report.studentPhotoUrl || report.student?.photoUrl || report.photoUrl) ? '2px solid #ccc' : '2px solid red',
+                  objectFit: 'cover'
+                }}
+                onError={(e) => {
+                  console.log('Image failed to load, falling back to default');
+                  e.target.src = image.books;
+                }}
               />
             </Box>
             <Box ml={3} mb={3}>
@@ -230,11 +339,7 @@ const StudentEvaluationReport = () => {
                   {report.studentName || 'NOT ASSIGNED'}
                 </Box>
               </Typography>
-              <Typography variant="body1" sx={{ mt: 1 }}>
-                <Box component="span" sx={{ fontSize: '1.2rem' }}>
-                  <strong>CLASS :</strong> {report.className || 'N/A'}
-                </Box>
-              </Typography>
+              
               <Typography variant="body1" sx={{ mt: 1 }}>
                 <Box component="span" sx={{ fontSize: '1.2rem' }}>
                   <strong>TERM :</strong> {report.termName || 'N/A'}
@@ -265,6 +370,13 @@ const StudentEvaluationReport = () => {
             gridAutoRows="auto"
             gap="20px"
             mt={2}
+            sx={{
+              '@media print': {
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '15px',
+                pageBreakInside: 'avoid'
+              }
+            }}
           >
             {sections.map((section, index) => (
               <Box
@@ -275,6 +387,14 @@ const StudentEvaluationReport = () => {
                 p={2}
                 borderRadius={1}
                 border={`1px solid ${borderColor}`}
+                sx={{
+                  '@media print': {
+                    backgroundColor: 'white',
+                    border: '1px solid black',
+                    pageBreakInside: 'avoid',
+                    marginBottom: '10px'
+                  }
+                }}
               >
                 <Typography
                   variant="h6"
@@ -344,9 +464,28 @@ const StudentEvaluationReport = () => {
           </Box>
 
           {/* Financial Information */}
-          {(report.debts || report.firstTermFee || report.secondTermFee) && (
-            <Box mt={3}>
-              <Typography variant="h4" align="start" sx={{ mb: 2 }}>
+          {(report.debts || report.firstTermFee || report.secondTermFee || report.firstTermOtherContribution || report.secondTermOtherContribution) && (
+            <Box 
+              mt={3}
+              sx={{
+                '@media print': {
+                  pageBreakBefore: 'auto',
+                  pageBreakInside: 'avoid'
+                }
+              }}
+            >
+              <Typography 
+                variant="h4" 
+                align="start" 
+                sx={{ 
+                  mb: 2,
+                  '@media print': {
+                    fontSize: '1.5rem',
+                    fontWeight: 'bold',
+                    color: 'black'
+                  }
+                }}
+              >
                 TAARIFA ZA KIFEDHA
               </Typography>
               <Box
@@ -354,6 +493,12 @@ const StudentEvaluationReport = () => {
                 gridTemplateColumns={{ xs: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }}
                 gridAutoRows="auto"
                 gap="20px"
+                sx={{
+                  '@media print': {
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: '15px'
+                  }
+                }}
               >
                 {report.debts && (
                   <Box
@@ -363,11 +508,36 @@ const StudentEvaluationReport = () => {
                     p={2}
                     borderRadius={1}
                     border={`1px solid ${borderColor}`}
+                    sx={{
+                      '@media print': {
+                        backgroundColor: 'white',
+                        border: '1px solid black',
+                        pageBreakInside: 'avoid'
+                      }
+                    }}
                   >
-                    <Typography fontWeight="bold" sx={{ color: colors.greenAccent[600], mb: 1 }}>
+                    <Typography 
+                      fontWeight="bold" 
+                      sx={{ 
+                        color: colors.greenAccent[600], 
+                        mb: 1,
+                        '@media print': {
+                          color: 'black',
+                          fontWeight: 'bold'
+                        }
+                      }}
+                    >
                       Deni
                     </Typography>
-                    <Typography>{report.debts}</Typography>
+                    <Typography 
+                      sx={{
+                        '@media print': {
+                          color: 'black'
+                        }
+                      }}
+                    >
+                      {report.debts}
+                    </Typography>
                   </Box>
                 )}
                 {report.firstTermFee && (
@@ -430,13 +600,62 @@ const StudentEvaluationReport = () => {
                     <Typography>{report.secondTermExamFee}</Typography>
                   </Box>
                 )}
+                {report.firstTermOtherContribution && (
+                  <Box
+                    backgroundColor={colors.primary[400]}
+                    display="flex"
+                    flexDirection="column"
+                    p={2}
+                    borderRadius={1}
+                    border={`1px solid ${borderColor}`}
+                  >
+                    <Typography fontWeight="bold" sx={{ color: colors.greenAccent[600], mb: 1 }}>
+                      Mchango Mwingine wa Muhula wa Kwanza
+                    </Typography>
+                    <Typography>{report.firstTermOtherContribution}</Typography>
+                  </Box>
+                )}
+                {report.secondTermOtherContribution && (
+                  <Box
+                    backgroundColor={colors.primary[400]}
+                    display="flex"
+                    flexDirection="column"
+                    p={2}
+                    borderRadius={1}
+                    border={`1px solid ${borderColor}`}
+                  >
+                    <Typography fontWeight="bold" sx={{ color: colors.greenAccent[600], mb: 1 }}>
+                      Mchango Mwingine wa Muhula wa Pili
+                    </Typography>
+                    <Typography>{report.secondTermOtherContribution}</Typography>
+                  </Box>
+                )}
               </Box>
             </Box>
           )}
 
           {/* Legend */}
-          <Box mt={3}>
-            <Typography variant="h4" align="start" sx={{ mb: 2 }}>
+          <Box 
+            mt={3}
+            sx={{
+              '@media print': {
+                pageBreakBefore: 'auto',
+                pageBreakInside: 'avoid'
+              }
+            }}
+          >
+            <Typography 
+              variant="h4" 
+              align="start" 
+              sx={{ 
+                mb: 2,
+                '@media print': {
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold',
+                  color: 'black'
+                }
+              }}
+            >
               MAANA YA MADARAJA
             </Typography>
             <Box
@@ -444,6 +663,13 @@ const StudentEvaluationReport = () => {
               p={3}
               borderRadius={1}
               border={`1px solid ${borderColor}`}
+              sx={{
+                '@media print': {
+                  backgroundColor: 'white',
+                  border: '1px solid black',
+                  pageBreakInside: 'avoid'
+                }
+              }}
             >
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: colors.greenAccent[600] }}>
                 MAANA YA MADARAJA:

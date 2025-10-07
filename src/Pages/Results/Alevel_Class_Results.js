@@ -1,9 +1,8 @@
-import { Box, Button, Typography, useTheme } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import Header from "../../components/Header";
 import { useState, useEffect } from "react";
-import { tokens } from "../../theme";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import useResultService from "../../api/services/ResultsService";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ExportPDFButton from "../../components/ExportPDFButton";
@@ -13,9 +12,6 @@ const AlevelClassResults = () => {
   const classId = location.state?.classId || location.state?.id;
   const examinationTypeId = location.state?.examId;
 
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
-  const navigate = useNavigate();
   const { fetchClassResults, sendSmsToParents } = useResultService();
 
   const [results, setResults] = useState(null);
@@ -23,6 +19,16 @@ const AlevelClassResults = () => {
   const [sendingStatus, setSendingStatus] = useState({});
   const [sentStatus, setSentStatus] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load sent status from localStorage on component mount
+  useEffect(() => {
+    const savedSentStatus = localStorage.getItem(
+      `sentStatus_${classId}_${examinationTypeId}`
+    );
+    if (savedSentStatus) {
+      setSentStatus(JSON.parse(savedSentStatus));
+    }
+  }, [classId, examinationTypeId]);
 
   // Core subject list
   const CORE_SUBJECTS = [
@@ -33,31 +39,20 @@ const AlevelClassResults = () => {
     "ECONOMICS",
     "HISTORY",
     "GEOGRAPHY",
-    "BIBLEKNOWLEGDE",
-    "CIVICS",
-    "KISWAHILI",
+    "GENERAL-STUDIES",
+    "LANGUAGE",
+    "BAM",
   ];
 
-  // ---------- Fetch / restore results ----------
   useEffect(() => {
     const loadResults = async () => {
-      if (!classId || !examinationTypeId) {
-        console.log("Missing classId or examinationTypeId:", {
-          classId,
-          examinationTypeId,
-        });
-        setIsLoading(false);
-        return;
-      }
+      if (!classId || !examinationTypeId) return;
 
       setIsLoading(true);
       try {
-        console.log("Loading results for classId:", classId, "examinationTypeId:", examinationTypeId);
         const data = await fetchClassResults(classId, examinationTypeId);
-        console.log("Fetched results data:", data);
         setResults(data);
       } catch (e) {
-        console.error("Error loading results:", e);
         setResults(null);
       } finally {
         setIsLoading(false);
@@ -66,28 +61,28 @@ const AlevelClassResults = () => {
     loadResults();
   }, [classId, examinationTypeId]);
 
-  // ---------- Helpers ----------
   const calculateGeneralValue = (subject, parts) => {
     if (["PHYSICS", "CHEMISTRY", "BIOLOGY"].includes(subject)) {
-      const s1 = parseFloat(parts.find((p) => p.name.endsWith("1"))?.marks) || 0;
-      const s2 = parseFloat(parts.find((p) => p.name.endsWith("2"))?.marks) || 0;
-
-      let value = null;
-      if (s1 && s2) {
-        value = ((s1 + s2) / 150) * 100;
-      } else if (s1) {
-        value = s1;
-      } else if (s2) {
-        value = s2;
-      }
-
-      return value !== null ? { value } : null;
+      const total = parts.reduce((sum, part) => {
+        const marks = parseFloat(part.marks) || 0;
+        return sum + marks;
+      }, 0);
+      return { value: total };
     }
 
     if (parts.length === 1) {
       const marks = parseFloat(parts[0].marks) || 0;
       return { value: marks };
     }
+
+    if (parts.length > 1) {
+      const totalMarks = parts.reduce((sum, part) => {
+        const marks = parseFloat(part.marks) || 0;
+        return sum + marks;
+      }, 0);
+      return { value: totalMarks };
+    }
+
     return null;
   };
 
@@ -112,9 +107,10 @@ const AlevelClassResults = () => {
     Object.entries(groupedSubjects).forEach(([subject, data]) => {
       if (Array.isArray(data)) {
         const result = calculateGeneralValue(subject, data);
-        if (result) {
-          finalSubjects[subject] = { parts: data, final: result };
-        }
+        finalSubjects[subject] = {
+          parts: data,
+          final: result,
+        };
       } else {
         const value = parseFloat(data.marks) || 0;
         finalSubjects[subject] = {
@@ -129,15 +125,19 @@ const AlevelClassResults = () => {
       0
     );
 
-    const average = Object.keys(finalSubjects).length
-      ? totalMarks / Object.keys(finalSubjects).length
+    const subjectsWithMarks = Object.values(finalSubjects).filter(
+      sub => sub.final?.value !== undefined && sub.final?.value !== null && sub.final.value > 0
+    );
+    
+    const average = subjectsWithMarks.length > 0
+      ? parseFloat((totalMarks / subjectsWithMarks.length).toFixed(1))
       : 0;
 
     return {
       id: studentData.id,
       studentName: studentData.studentName,
       studentNumber: studentData.studentNumber,
-      position: studentData.position,
+      position: 0,
       totalMarks,
       average,
       subjects: finalSubjects,
@@ -165,31 +165,30 @@ const AlevelClassResults = () => {
     return Object.values(studentMap);
   };
 
-  // ---------- Process results ----------
   useEffect(() => {
-    if (results && results.data) {
-      if (Array.isArray(results.data) && results.data.length > 0) {
-        const grouped = groupResultsByStudent(results.data);
-        const processed = grouped
-          .map((student) => processStudent(student))
-          .filter((student) =>
-            Object.values(student.subjects || {}).some(
-              (sub) => sub?.final?.value && sub.final.value > 0
-            )
+    if (results && results.data && Array.isArray(results.data) && results.data.length > 0) {
+      const grouped = groupResultsByStudent(results.data);
+      const processed = grouped
+        .map((student) => processStudent(student))
+        .filter((student) =>
+          Object.values(student.subjects || {}).some(
+            (sub) =>
+              (sub?.final?.value !== undefined && sub?.final?.value !== null) ||
+              (sub?.parts && sub.parts.length > 0)
           )
-          // 🔥 Sort students by position (1 → last)
-          .sort((a, b) => (a.position ?? Infinity) - (b.position ?? Infinity));
+        )
+        .sort((a, b) => (b.average || 0) - (a.average || 0))
+        .map((student, index) => ({
+          ...student,
+          position: index + 1
+        }));
 
-        setGroupedResults(processed);
-      } else {
-        setGroupedResults([]);
-      }
+      setGroupedResults(processed);
     } else {
       setGroupedResults([]);
     }
   }, [results]);
 
-  // ---------- SMS ----------
   const handleSendSMS = async (row) => {
     const studentId = row.id;
     setSendingStatus((prev) => ({ ...prev, [studentId]: true }));
@@ -197,10 +196,9 @@ const AlevelClassResults = () => {
     try {
       const subjectsSummary = Object.entries(row.subjects).reduce(
         (acc, [subject, details]) => {
-          const marks =
-            details?.final?.value !== undefined && details?.final?.value !== null
-              ? parseFloat(details.final.value) || 0
-              : 0;
+          const marks = details?.final?.value !== undefined && details?.final?.value !== null
+            ? parseFloat(details.final.value) || 0
+            : 0;
           acc[subject] = { marks };
           return acc;
         },
@@ -212,20 +210,29 @@ const AlevelClassResults = () => {
         studentNumber: row.studentNumber,
         subjects: subjectsSummary,
         totalMarks: parseFloat(row.totalMarks) || 0,
-        average: parseFloat(row.average) || 0,
+        average: parseFloat(row.average?.toFixed(1)) || 0,
         position: row.position ? parseInt(row.position) : 0,
+        ...(row.division && row.division !== "N/A" && row.division !== "" && {
+          division: row.division,
+        }),
       };
 
       await sendSmsToParents(studentId, payload);
-      setSentStatus((prev) => ({ ...prev, [studentId]: true }));
+      setSentStatus((prev) => {
+        const newStatus = { ...prev, [studentId]: true };
+        localStorage.setItem(
+          `sentStatus_${classId}_${examinationTypeId}`,
+          JSON.stringify(newStatus)
+        );
+        return newStatus;
+      });
     } catch (error) {
-      console.error("❌ Error sending SMS", error);
+      console.error("Error sending SMS", error);
     } finally {
       setSendingStatus((prev) => ({ ...prev, [studentId]: false }));
     }
   };
 
-  // ---------- Columns ----------
   const createColumns = () => {
     if (!groupedResults.length) return [];
 
@@ -264,32 +271,29 @@ const AlevelClassResults = () => {
         minWidth: 220,
         renderCell: ({ row }) => {
           const subj = row.subjects[subject];
-          if (!subj || (!subj.parts?.length && !subj.final)) return null;
+          if (!subj) return "";
 
           const validParts = (subj.parts || []).filter(
-            (part) =>
-              part.marks !== undefined &&
-              part.marks !== null &&
-              part.marks !== ""
+            (part) => part.marks !== undefined && part.marks !== null && part.marks !== ""
           );
 
-          if (!validParts.length && !subj.final?.value) return null;
+          if (!validParts.length && !subj.final?.value) return "";
 
           return (
             <Box>
               {validParts.map((part, idx) => (
                 <Typography key={idx}>
                   {part.name}
-                  {part.marks ? `: ${part.marks}` : ""}
+                  {part.marks !== undefined && part.marks !== null ? `: ${part.marks}` : ""}
                 </Typography>
               ))}
-              {subj.final?.value ? (
+              {subj.final?.value !== undefined && subj.final?.value !== null && (
                 <Box mt="5px" borderTop="1px solid #ccc" pt="5px">
                   <Typography fontWeight="bold">
                     Marks: {subj.final.value}
                   </Typography>
                 </Box>
-              ) : null}
+              )}
             </Box>
           );
         },
@@ -313,7 +317,7 @@ const AlevelClassResults = () => {
         minWidth: 100,
         renderCell: ({ row }) => (
           <Typography fontWeight="bold">
-            {row.average ? row.average.toFixed(1) : ""}
+            {row.average ? parseFloat(row.average).toFixed(1) : ""}
           </Typography>
         ),
       },
@@ -321,15 +325,12 @@ const AlevelClassResults = () => {
         field: "position",
         headerName: "Position",
         flex: 0.5,
-        minWidth: 120,
-        renderCell: ({ row }) => {
-          const totalStudents = groupedResults.length;
-          return (
-            <Typography fontWeight="bold">
-              {row.position} out of {totalStudents}
-            </Typography>
-          );
-        },
+        minWidth: 150,
+        renderCell: ({ row }) => (
+          <Typography fontWeight="bold">
+            {row.position} out of {groupedResults.length}
+          </Typography>
+        ),
       },
       {
         field: "action",
@@ -341,9 +342,18 @@ const AlevelClassResults = () => {
             <Button
               variant="contained"
               size="small"
-              color={sentStatus[row.id] ? "success" : "secondary"}
-              disabled={sendingStatus[row.id] || sentStatus[row.id]}
+              disabled={sendingStatus[row.id]}
               onClick={() => handleSendSMS(row)}
+              sx={{
+                backgroundColor: sentStatus[row.id] ? "#0A6927" : undefined,
+                color: sentStatus[row.id] ? "white" : undefined,
+                "&:hover": {
+                  backgroundColor: sentStatus[row.id] ? "#085A1F" : undefined,
+                },
+                "&:disabled": {
+                  backgroundColor: sendingStatus[row.id] ? "#ccc" : undefined,
+                },
+              }}
             >
               {sendingStatus[row.id]
                 ? "Sending..."
@@ -364,7 +374,12 @@ const AlevelClassResults = () => {
       <Box p={2} ml={2} mr={2}>
         <Header title="CLASS RESULTS" />
         <Box mb={2} display="flex" justifyContent="flex-end">
-          <ExportPDFButton groupedResults={groupedResults} />
+          <ExportPDFButton
+            groupedResults={groupedResults}
+            isClassResults={true}
+            className={groupedResults[0]?.className || "N/A"}
+            examinationType={groupedResults[0]?.examinationType || "N/A"}
+          />
         </Box>
 
         {isLoading ? (

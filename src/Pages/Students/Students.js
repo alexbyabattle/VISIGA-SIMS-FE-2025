@@ -12,12 +12,16 @@ import { tokens } from '../../theme';
 import { getUserFromCookies } from '../../utils/Cookie-utils';
 import { useNavigate, useParams } from "react-router-dom";
 import useStudentService from '../../api/services/studentService';
+import useTermService from '../../api/services/termService';
 import Table from '../../components/Table';
 import Header from "../../components/Header";
 import LoadingSpinner from '../../components/LoadingSpinner';
 import useClassService from "../../api/services/ClassService";
 import DeleteDialog from "./Delete_Student";
 import CreateDialog from "./Create_Student";
+import AccountsDetailsDialog from "../StudentEvaluation/AccountsDetailsDialog";
+import RectorsMessageDialog from "../StudentEvaluation/RectorsMessageDialog";
+import StudentEvaluationDialog from "../StudentEvaluation/StudentEvaluationDialog";
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import * as image from '../../assets';
 
@@ -34,12 +38,21 @@ const ClassStudents = () => {
   } = useStudentService();
 
   const { changeToGraduateStatus  } = useClassService();
+  const { fetchAllActiveTerms, terms } = useTermService();
+
+  // Get user role from cookies
+  const user = getUserFromCookies();
+  const userRole = user?.data?.role;
+  const isAdmin = userRole === 'ADMIN';
 
   const [showAllStudents, setShowAllStudents] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [accountsDialogOpen, setAccountsDialogOpen] = useState(false);
+  const [rectorDialogOpen, setRectorDialogOpen] = useState(false);
+  const [evaluationDialogOpen, setEvaluationDialogOpen] = useState(false);
 
   const loadStudents = async () => {
     if (classId) {
@@ -55,6 +68,13 @@ const ClassStudents = () => {
   useEffect(() => {
     loadStudents();
   }, [classId, showAllStudents]);
+
+  // Load terms when component mounts
+  useEffect(() => {
+    if (isAdmin) {
+      fetchAllActiveTerms();
+    }
+  }, [isAdmin]);
 
   const handleDeleteClick = (studentId) => {
     setSelectedStudentId(studentId);
@@ -86,15 +106,30 @@ const ClassStudents = () => {
   };
 
   const fillAccountsDetails = (studentId) => {
-    
+    if (!isAdmin) {
+      console.warn('Only ADMIN users can access accounts details');
+      return;
+    }
+    setSelectedStudentId(studentId);
+    setAccountsDialogOpen(true);
   };
 
   const fillRectorMessage = (studentId) => {
-    
+    if (!isAdmin) {
+      console.warn('Only ADMIN users can access rector message');
+      return;
+    }
+    setSelectedStudentId(studentId);
+    setRectorDialogOpen(true);
   };
 
   const fillStudentEvaluation = (studentId) => {
-    
+    if (!isAdmin) {
+      console.warn('Only ADMIN users can access student evaluation');
+      return;
+    }
+    setSelectedStudentId(studentId);
+    setEvaluationDialogOpen(true);
   };
 
   const handleAllUsersClick = () => {
@@ -147,6 +182,9 @@ const ClassStudents = () => {
     });
   }, [students, showAllStudents]);
 
+  // Get selected student for dialogs
+  const selectedStudent = selectedStudentId ? students.find(s => s.id === selectedStudentId) : null;
+
 
 
 
@@ -183,7 +221,7 @@ const ClassStudents = () => {
       flex: 1,
       sortable: true,
     },
-    {
+    ...(isAdmin ? [{
       field: "accounts",
       headerName: "Accounts",
       width: 100,
@@ -200,8 +238,8 @@ const ClassStudents = () => {
           </Button>
         </Box>
       ),
-    },
-    {
+    }] : []),
+    ...(isAdmin ? [{
       field: "rector",
       headerName: "Rector",
       width: 100,
@@ -218,8 +256,8 @@ const ClassStudents = () => {
           </Button>
         </Box>
       ),
-    },
-    {
+    }] : []),
+    ...(isAdmin ? [{
       field: "secretary",
       headerName: "Secretary",
       width: 100,
@@ -236,7 +274,7 @@ const ClassStudents = () => {
           </Button>
         </Box>
       ),
-    },
+    }] : []),
     {
       field: "Parents",
       headerName: "Parents",
@@ -291,6 +329,45 @@ const ClassStudents = () => {
         onSuccess={loadStudents}
         clazzId={classId}
       />
+
+      {isAdmin && (
+        <AccountsDetailsDialog
+          open={accountsDialogOpen}
+          onClose={() => {
+            setAccountsDialogOpen(false);
+            setSelectedStudentId(null);
+          }}
+          students={students}
+          terms={terms}
+          selectedStudent={selectedStudent}
+        />
+      )}
+
+      {isAdmin && (
+        <RectorsMessageDialog
+          open={rectorDialogOpen}
+          onClose={() => {
+            setRectorDialogOpen(false);
+            setSelectedStudentId(null);
+          }}
+          students={students}
+          terms={terms}
+          selectedStudent={selectedStudent}
+        />
+      )}
+
+      {isAdmin && (
+        <StudentEvaluationDialog
+          open={evaluationDialogOpen}
+          onClose={() => {
+            setEvaluationDialogOpen(false);
+            setSelectedStudentId(null);
+          }}
+          students={students}
+          terms={terms}
+          selectedStudent={selectedStudent}
+        />
+      )}
 
 
       <Box p={2} ml={2} mr={2}>

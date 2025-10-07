@@ -49,21 +49,14 @@ const StudentResultsMarks100 = () => {
 
   const getGradePoint = (grade) => {
     switch (grade) {
-      case "A":
-        return 1;
-      case "B":
-        return 2;
-      case "C":
-        return 3;
-      case "D":
-        return 4;
-      case "E":
-        return 5;
+      case "A": return 1;
+      case "B": return 2;
+      case "C": return 3;
+      case "D": return 4;
+      case "E": return 5;
       case "S":
-      case "F":
-        return 6;
-      default:
-        return 0;
+      case "F": return 6;
+      default: return 0;
     }
   };
 
@@ -81,20 +74,38 @@ const StudentResultsMarks100 = () => {
     return `Division 0 • ${points}`;
   };
 
-  // ---------- Group & process ----------
+  // ---------- Subject calculation ----------
   const calculateGeneralValue = (subject, parts) => {
+    // Science subjects with two papers
     if (["PHYSICS", "CHEMISTRY", "BIOLOGY"].includes(subject)) {
-      const s1 = parseFloat(parts.find((p) => p.name.endsWith("1"))?.marks) || 0;
-      const s2 = parseFloat(parts.find((p) => p.name.endsWith("2"))?.marks) || 0;
-      if (s1 && s2) return { value: ((s1 + s2) / 150) * 100 };
-      if (s1) return { value: s1 };
-      if (s2) return { value: s2 };
+      const s1 = parseFloat(parts.find(p => p.name.endsWith("1"))?.marks) || 0;
+      const s2 = parseFloat(parts.find(p => p.name.endsWith("2"))?.marks) || 0;
+
+      let value = null;
+
+      if (s1 && s2) {
+        // Both present: (sum /150)*100
+        value = ((s1 + s2) / 150) * 100;
+      } else if (s1) {
+        // Only paper 1
+        value = s1;
+      } else if (s2) {
+        // Only paper 2
+        value = s2;
+      }
+
+      if (value !== null) {
+        return { value: parseFloat(value.toFixed(2)) };
+      }
       return null;
     }
+
+    // Single-part or other subjects
     if (parts.length === 1) {
       const marks = parseFloat(parts[0].marks) || 0;
-      return { value: marks };
+      return { value: parseFloat(marks.toFixed(2)) };
     }
+
     return null;
   };
 
@@ -117,7 +128,7 @@ const StudentResultsMarks100 = () => {
     const finalSubjects = {};
 
     Object.entries(groupedSubjects).forEach(([subject, data]) => {
-      let value;
+      let value = null;
       if (Array.isArray(data)) {
         const res = calculateGeneralValue(subject, data);
         if (res) value = res.value;
@@ -125,7 +136,7 @@ const StudentResultsMarks100 = () => {
         value = parseFloat(data.marks) || 0;
       }
 
-      if (value !== undefined) {
+      if (value !== null) {
         const roundedValue = parseFloat(value.toFixed(2));
         finalSubjects[subject] = {
           parts: Array.isArray(data) ? data : [{ name: subject, ...data }],
@@ -153,6 +164,7 @@ const StudentResultsMarks100 = () => {
       studentName: studentData.studentName,
       studentNumber: studentData.studentNumber,
       position: studentData.position,
+      combination: studentData.combination || "N/A",
       totalMarks,
       average,
       division,
@@ -168,11 +180,10 @@ const StudentResultsMarks100 = () => {
     let classInfo = {
       className: "",
       examinationType: "",
-      totalStudents: ""
+      totalStudents: "",
     };
 
     data.forEach((item) => {
-      // Extract class information from the first item
       if (!classInfo.className) {
         classInfo.className = item.className || "";
         classInfo.examinationType = item.examinationType || "";
@@ -185,6 +196,7 @@ const StudentResultsMarks100 = () => {
           studentName: item.studentName,
           studentNumber: item.studentNumber,
           position: item.position,
+          combination: item.combination || "",
           subjects: {},
         };
       }
@@ -192,10 +204,10 @@ const StudentResultsMarks100 = () => {
         marks: item.marks,
       };
     });
-    
+
     return {
       students: Object.values(studentMap),
-      classInfo: classInfo
+      classInfo,
     };
   };
 
@@ -231,7 +243,6 @@ const StudentResultsMarks100 = () => {
     loadResults();
   }, [classId, examId, studentId]);
 
-
   // ---------- Render ----------
   return (
     <Box m={2}>
@@ -250,25 +261,25 @@ const StudentResultsMarks100 = () => {
                 <Typography variant="subtitle2" fontWeight="bold">
                   STUDENT NAME
                 </Typography>
-                <Typography variant="body1">
-                  {studentResult.studentName}
-                </Typography>
+                <Typography variant="body1">{studentResult.studentName}</Typography>
               </Box>
               <Box>
                 <Typography variant="subtitle2" fontWeight="bold">
                   EXAMINATION
                 </Typography>
-                <Typography variant="body1">
-                  {studentResult.examinationType}
-                </Typography>
+                <Typography variant="body1">{studentResult.examinationType}</Typography>
               </Box>
               <Box>
                 <Typography variant="subtitle2" fontWeight="bold">
                   CLASS
                 </Typography>
-                <Typography variant="body1">
-                  {studentResult.className}
+                <Typography variant="body1">{studentResult.className}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="subtitle2" fontWeight="bold">
+                  COMBINATION
                 </Typography>
+                <Typography variant="body1">{studentResult.combination}</Typography>
               </Box>
             </Box>
           </Card>

@@ -6,6 +6,7 @@ import { tokens } from "../../theme";
 import { useNavigate, useLocation } from "react-router-dom";
 import useResultService from "../../api/services/ResultsService";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import ExportPDFButton from "../../components/ExportPDFButton";
 
 const AlevelClassResultsMarks100 = () => {
   const location = useLocation();
@@ -22,6 +23,16 @@ const AlevelClassResultsMarks100 = () => {
   const [sendingStatus, setSendingStatus] = useState({});
   const [sentStatus, setSentStatus] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load sent status from localStorage on component mount
+  useEffect(() => {
+    const savedSentStatus = localStorage.getItem(
+      `sentStatus_${classId}_${examinationTypeId}`
+    );
+    if (savedSentStatus) {
+      setSentStatus(JSON.parse(savedSentStatus));
+    }
+  }, [classId, examinationTypeId]);
 
   const CORE_SUBJECTS = [
     "PHYSICS",
@@ -64,11 +75,11 @@ const AlevelClassResultsMarks100 = () => {
     ({ A: 1, B: 2, C: 3, D: 4, E: 5, F: 6 }[grade] || 0);
 
   const getDivisionLabel = (points) => {
-    if (points >= 1 && points <= 9) return `Division 1 .${points}`;
-    if (points >= 10 && points <= 12) return `Division 2 .${points}`;
-    if (points >= 13 && points <= 21) return `Division 3 .${points}`;
-    if (points >= 22 && points <= 24) return `Division 4 .${points}`;
-    return `Division 0 .${points}`;
+    if (points >= 1 && points <= 9) return `Division 1 .${parseFloat(points).toFixed(1).replace(/\.0$/, '')}`;
+    if (points >= 10 && points <= 12) return `Division 2 .${parseFloat(points).toFixed(1).replace(/\.0$/, '')}`;
+    if (points >= 13 && points <= 21) return `Division 3 .${parseFloat(points).toFixed(1).replace(/\.0$/, '')}`;
+    if (points >= 22 && points <= 24) return `Division 4 .${parseFloat(points).toFixed(1).replace(/\.0$/, '')}`;
+    return `Division 0 .${parseFloat(points).toFixed(1).replace(/\.0$/, '')}`;
   };
 
   // ---------- Subject helpers ----------
@@ -99,14 +110,12 @@ const AlevelClassResultsMarks100 = () => {
   const groupSubjects = (subjects) => {
     const grouped = {};
     Object.entries(subjects).forEach(([subject, data]) => {
-      const base = CORE_SUBJECTS.find((s) => subject === s);
-      if (base) grouped[subject] = data;
-      else {
-        const baseSubject = CORE_SUBJECTS.find((s) => subject.startsWith(s));
-        if (baseSubject) {
-          if (!grouped[baseSubject]) grouped[baseSubject] = [];
-          grouped[baseSubject].push({ name: subject, ...data });
-        } else grouped[subject] = data;
+      const baseSubject = CORE_SUBJECTS.find((s) => subject.startsWith(s));
+      if (baseSubject) {
+        if (!grouped[baseSubject]) grouped[baseSubject] = [];
+        grouped[baseSubject].push({ name: subject, ...data });
+      } else {
+        grouped[subject] = data;
       }
     });
     return grouped;
@@ -127,7 +136,7 @@ const AlevelClassResultsMarks100 = () => {
     Object.entries(grouped).forEach(([sub, data]) => {
       if (Array.isArray(data)) {
         const res = calculateGeneralValue(sub, data);
-        if (res) finalSubjects[sub] = { parts: data, final: res };
+        finalSubjects[sub] = { parts: data, final: res };
       } else {
         const marks = parseFloat(data.marks) || 0;
         const grade = data.grade || getGrade(marks);
@@ -137,18 +146,19 @@ const AlevelClassResultsMarks100 = () => {
         };
       }
     });
-    const total = Object.values(finalSubjects).reduce((sum, s) => sum + (parseFloat(s.final.value) || 0), 0);
-    const count = Object.values(finalSubjects).filter((s) => s.final.value > 0).length;
+    const total = Object.values(finalSubjects).reduce((sum, s) => sum + (parseFloat(s.final?.value) || 0), 0);
+    const count = Object.values(finalSubjects).filter((s) => s.final?.value > 0).length;
     const avg = count ? total / count : 0;
     const divisionPts = determineDivision(
-      Object.entries(finalSubjects).map(([subject, val]) => ({ subject, grade: val.final.grade }))
+      Object.entries(finalSubjects).map(([subject, val]) => ({ subject, grade: val.final?.grade }))
     );
     return {
       id: st.id,
       studentName: st.studentName,
       studentNumber: st.studentNumber,
       position: st.position,
-      totalMarks: total,
+      combination: st.combination || "N/A",
+      totalMarks: parseFloat(total.toFixed(2)),
       average: parseFloat(avg.toFixed(2)),
       division: getDivisionLabel(divisionPts),
       subjects: finalSubjects,
@@ -165,6 +175,7 @@ const AlevelClassResultsMarks100 = () => {
           studentName: item.studentName,
           studentNumber: item.studentNumber,
           position: item.position,
+          combination: item.combination || "",
           subjects: {},
         };
       map[item.studentId].subjects[item.subjectName] = {
@@ -181,7 +192,9 @@ const AlevelClassResultsMarks100 = () => {
     const grouped = groupResultsByStudent(results.data);
     const processed = grouped.map(processStudent);
     const valid = processed.filter((st) =>
-      Object.values(st.subjects).some((s) => s.final?.value > 0)
+      Object.values(st.subjects).some((s) => 
+        (s.final?.value > 0) || (s.parts && s.parts.length > 0)
+      )
     );
     const sorted = valid
       .sort((a, b) => b.average - a.average)
@@ -189,18 +202,19 @@ const AlevelClassResultsMarks100 = () => {
     setGroupedResults(sorted);
   }, [results]);
 
-  // ---------- SMS ----------
-  const handleSendSMS = async (row) => {
+  // ---------- Email ----------
+  const handleSendEmail = async (row) => {
     const id = row.id;
     setSendingStatus((p) => ({ ...p, [id]: true }));
     try {
       const subjectsSummary = Object.fromEntries(
         Object.entries(row.subjects).map(([sub, det]) => [
           sub,
-          { marks: parseFloat(det.final.value) || 0, grade: det.final.grade },
+          { marks: parseFloat(det.final?.value) || 0, grade: det.final?.grade },
         ])
       );
-      await sendSmsToParents(id, {
+      
+      const emailData = {
         studentName: row.studentName,
         studentNumber: row.studentNumber,
         subjects: subjectsSummary,
@@ -209,10 +223,22 @@ const AlevelClassResultsMarks100 = () => {
         division: row.division,
         position: row.position,
         positionText: `${row.position} out of ${groupedResults.length}`,
+      };
+
+      // Send email instead of SMS
+      await sendSmsToParents(id, emailData);
+      
+      // Update sent status and persist to localStorage
+      setSentStatus((p) => {
+        const newStatus = { ...p, [id]: true };
+        localStorage.setItem(
+          `sentStatus_${classId}_${examinationTypeId}`,
+          JSON.stringify(newStatus)
+        );
+        return newStatus;
       });
-      setSentStatus((p) => ({ ...p, [id]: true }));
     } catch (e) {
-      console.error("Error sending SMS", e);
+      console.error("Error sending email", e);
     } finally {
       setSendingStatus((p) => ({ ...p, [id]: false }));
     }
@@ -230,6 +256,7 @@ const AlevelClassResultsMarks100 = () => {
         field: "studentName",
         headerName: "Name",
         flex: 1,
+        minWidth: 170,
         renderCell: ({ row }) => <Typography fontWeight="bold">{row.studentName}</Typography>,
       },
       {
@@ -238,6 +265,13 @@ const AlevelClassResultsMarks100 = () => {
         flex: 1,
         renderCell: ({ row }) => <Typography fontWeight="bold">{row.studentNumber}</Typography>,
       },
+      {
+        field: "combination",
+        headerName: "Combination",
+        flex: 1,
+        minWidth: 150,
+        renderCell: ({ row }) => <Typography fontWeight="bold">{row.combination}</Typography>,
+      },
     ];
 
     subjects.forEach((sub) =>
@@ -245,24 +279,25 @@ const AlevelClassResultsMarks100 = () => {
         field: `sub_${sub}`,
         headerName: sub,
         flex: 1,
+        minWidth: 120,
         renderCell: ({ row }) => {
           const s = row.subjects[sub];
-          if (!s) return null;
+          if (!s) return "";
 
-          // ✅ Skip if no marks
+          // Check if there are any marks to display
           const hasMarks =
-            s.parts?.some((p) => parseFloat(p.marks) > 0) ||
+            (s.parts && s.parts.some((p) => parseFloat(p.marks) > 0)) ||
             (s.final && parseFloat(s.final.value) > 0);
 
-          if (!hasMarks) return null;
+          if (!hasMarks) return "";
 
           return (
             <Box>
-              {s.parts
+              {s.parts && s.parts
                 .filter((p) => parseFloat(p.marks) > 0)
                 .map((p, idx) => (
                   <Typography key={idx} variant="body2">
-                    {p.name}: {p.marks}
+                    {p.name}: {parseFloat(p.marks).toFixed(2)}
                     {p.grade && ` (${p.grade})`}
                   </Typography>
                 ))}
@@ -270,7 +305,7 @@ const AlevelClassResultsMarks100 = () => {
               {s.final && parseFloat(s.final.value) > 0 && (
                 <Box mt={1} borderTop="1px solid #ccc" pt={1}>
                   <Typography fontWeight="bold">
-                    Total: {s.final.value} - {s.final.grade}
+                    Total: {parseFloat(s.final.value).toFixed(2)} - {s.final.grade}
                   </Typography>
                 </Box>
               )}
@@ -281,28 +316,43 @@ const AlevelClassResultsMarks100 = () => {
     );
 
     cols.push(
-      { field: "totalMarks", headerName: "Total", flex: 0.7, renderCell: ({ row }) => row.totalMarks },
-      { field: "average", headerName: "Average", flex: 0.5, renderCell: ({ row }) => row.average },
-      { field: "division", headerName: "Division", flex: 0.7, renderCell: ({ row }) => row.division },
+      { field: "totalMarks", headerName: "Total", flex: 0.7, renderCell: ({ row }) => parseFloat(row.totalMarks).toFixed(2) },
+      { field: "average", headerName: "Average", flex: 0.5,  renderCell: ({ row }) => parseFloat(row.average).toFixed(2) },
+      { field: "division", headerName: "Division", flex: 0.7, minWidth: 120, renderCell: ({ row }) => row.division },
       {
         field: "position",
         headerName: "Position",
         flex: 0.5,
+        minWidth: 120,
         renderCell: ({ row }) => `${row.position} out of ${groupedResults.length}`,
       },
       {
         field: "action",
         headerName: "Action",
         flex: 0.8,
+        minWidth: 120,
         renderCell: ({ row }) => (
           <Button
             variant="contained"
             size="small"
-            color={sentStatus[row.id] ? "success" : "secondary"}
-            disabled={sendingStatus[row.id] || sentStatus[row.id]}
-            onClick={() => handleSendSMS(row)}
+            disabled={sendingStatus[row.id]}
+            onClick={() => handleSendEmail(row)}
+            sx={{
+              backgroundColor: sentStatus[row.id] ? "#0A6927" : undefined,
+              color: sentStatus[row.id] ? "white" : undefined,
+              "&:hover": {
+                backgroundColor: sentStatus[row.id] ? "#085A1F" : undefined,
+              },
+              "&:disabled": {
+                backgroundColor: sendingStatus[row.id] ? "#ccc" : undefined,
+              },
+            }}
           >
-            {sendingStatus[row.id] ? "Sending..." : sentStatus[row.id] ? "Sent" : "Send SMS"}
+            {sendingStatus[row.id]
+              ? "Sending..."
+              : sentStatus[row.id]
+              ? "Sent"
+              : "Send Email"}
           </Button>
         ),
       }
@@ -313,24 +363,35 @@ const AlevelClassResultsMarks100 = () => {
   // ---------- Render ----------
   return (
     <Box m="20px">
-      <Header title="CLASS RESULTS" />
-      {isLoading ? (
-        <LoadingSpinner />
-      ) : groupedResults.length ? (
-        <Box sx={{ height: "75vh" }}>
-          <DataGrid
-            rows={groupedResults}
-            columns={createColumns()}
-            pageSize={10}
-            rowsPerPageOptions={[10, 20, 50]}
-            getRowHeight={() => 120}
+      <Box p={2} ml={2} mr={2}>
+        <Header title="CLASS RESULTS" />
+        <Box mb={2} display="flex" justifyContent="flex-end">
+          <ExportPDFButton
+            groupedResults={groupedResults}
+            isClassResults={true}
+            className={groupedResults[0]?.className || "N/A"}
+            examinationType={groupedResults[0]?.examinationType || "N/A"}
           />
         </Box>
-      ) : (
-        <Typography textAlign="center" mt={4}>
-          No results found
-        </Typography>
-      )}
+
+        {isLoading ? (
+          <LoadingSpinner />
+        ) : groupedResults.length ? (
+          <Box sx={{ height: "75vh" }}>
+            <DataGrid
+              rows={groupedResults}
+              columns={createColumns()}
+              pageSize={10}
+              rowsPerPageOptions={[10, 20, 50]}
+              getRowHeight={() => 120}
+            />
+          </Box>
+        ) : (
+          <Typography textAlign="center" mt={4}>
+            No results found
+          </Typography>
+        )}
+      </Box>
     </Box>
   );
 };

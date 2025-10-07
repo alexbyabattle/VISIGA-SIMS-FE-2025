@@ -18,8 +18,8 @@ const generateTermResultsPDF = (results, termName, className) => {
   doc.text('CLASS TERM RESULTS REPORT', pageWidth / 2, 25, { align: 'center' });
   
   doc.setFontSize(12);
-  doc.text(`Class: ${className || 'N/A'}`, 20, 35);
-  doc.text(`Term: ${termName || 'N/A'}`, pageWidth - 60, 35);
+  doc.text(`Class: ${className || ''}`, 20, 35);
+  doc.text(`Term: ${termName || ''}`, pageWidth - 60, 35);
   
   // Get current date
   const currentDate = new Date().toLocaleDateString();
@@ -56,11 +56,11 @@ const generateTermResultsPDF = (results, termName, className) => {
   
   // Helper function to get subject marks for PDF
   const getSubjectMarks = (subj) => {
-    if (!subj || !hasSubjectResults(subj)) return 'N/A';
+    if (!subj || !hasSubjectResults(subj)) return '';
     return subj.totalMarks || 0;
   };
   
-  // Check if Index and Division columns should be shown
+  // Check if Index, Combination, and Division columns should be shown
   const checkColumnEmpty = (columnKey, getValue) => {
     return results.every(student => {
       const value = getValue(student);
@@ -69,11 +69,13 @@ const generateTermResultsPDF = (results, termName, className) => {
   };
   
   const isIndexEmpty = checkColumnEmpty('Index', (student) => student.studentNumber);
+  const isCombinationEmpty = checkColumnEmpty('Combination', (student) => student.combination);
   const isDivisionEmpty = checkColumnEmpty('Division', (student) => student.division);
   
   // Prepare headers
   const baseHeaders = ["No", "Student Name"];
   if (!isIndexEmpty) { baseHeaders.push("Index Number"); }
+  if (!isCombinationEmpty) { baseHeaders.push("Combination"); }
   baseHeaders.push(...subjectNames);
   baseHeaders.push("Total Marks", "Average");
   if (!isDivisionEmpty) { baseHeaders.push("Division"); }
@@ -81,10 +83,14 @@ const generateTermResultsPDF = (results, termName, className) => {
   
   // Prepare data rows
   const tableData = results.map((student, index) => {
-    const rowData = [index + 1, student.studentName || 'N/A'];
+    const rowData = [index + 1, student.studentName || ''];
     
     if (!isIndexEmpty) { 
-      rowData.push(student.studentNumber || 'N/A'); 
+      rowData.push(student.studentNumber || ''); 
+    }
+    
+    if (!isCombinationEmpty) { 
+      rowData.push(student.combination || ''); 
     }
     
     // Add subject marks
@@ -99,10 +105,10 @@ const generateTermResultsPDF = (results, termName, className) => {
     rowData.push(student.average || 0);
     
     if (!isDivisionEmpty) { 
-      rowData.push(student.division || 'N/A'); 
+      rowData.push(student.division || ''); 
     }
     
-    rowData.push(student.positionText || 'N/A');
+    rowData.push(student.positionText || '');
     
     return rowData;
   });
@@ -115,6 +121,10 @@ const generateTermResultsPDF = (results, termName, className) => {
   
   if (!isIndexEmpty) { 
     fixedWidths['Index Number'] = 25; 
+  }
+  
+  if (!isCombinationEmpty) { 
+    fixedWidths['Combination'] = 30; 
   }
   
   if (!isDivisionEmpty) { 
@@ -155,6 +165,7 @@ const generateTermResultsPDF = (results, termName, className) => {
       'No': { halign: 'center', cellWidth: fixedWidths['No'] },
       'Student Name': { halign: 'left', cellWidth: fixedWidths['Student Name'] },
       'Index Number': { halign: 'center', cellWidth: fixedWidths['Index Number'] },
+      'Combination': { halign: 'center', cellWidth: fixedWidths['Combination'] },
       'Total Marks': { halign: 'center', cellWidth: fixedWidths['Total Marks'] },
       'Average': { halign: 'center', cellWidth: fixedWidths['Average'] },
       'Division': { halign: 'center', cellWidth: fixedWidths['Division'] },

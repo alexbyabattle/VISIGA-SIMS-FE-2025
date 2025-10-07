@@ -18,14 +18,14 @@ const generateClassResultsPDF = (groupedResults, className, examinationType) => 
   doc.text('CLASS RESULTS REPORT', pageWidth / 2, 25, { align: 'center' });
   
   doc.setFontSize(12);
-  doc.text(`Class: ${className || 'N/A'}`, 20, 35);
-  doc.text(`Examination: ${examinationType || 'N/A'}`, pageWidth - 60, 35);
+  doc.text(`Class: ${className || ''}`, 20, 35);
+  doc.text(`Examination: ${examinationType || ''}`, pageWidth - 60, 35);
   
   // Get current date
   const currentDate = new Date().toLocaleDateString();
   doc.text(`Generated on: ${currentDate}`, pageWidth - 60, 45);
   
-  // Check if Index and Division columns should be shown
+  // Check if Index, Combination, and Division columns should be shown
   const checkColumnEmpty = (columnKey, getValue) => {
     return groupedResults.every(student => {
       const value = getValue(student);
@@ -34,6 +34,7 @@ const generateClassResultsPDF = (groupedResults, className, examinationType) => 
   };
   
   const isIndexEmpty = checkColumnEmpty('Index', (student) => student.studentNumber);
+  const isCombinationEmpty = checkColumnEmpty('Combination', (student) => student.combination);
   const isDivisionEmpty = checkColumnEmpty('Division', (student) => student.division);
   
   // Collect all subject names
@@ -48,13 +49,14 @@ const generateClassResultsPDF = (groupedResults, className, examinationType) => 
   
   // Helper function to get subject marks for PDF
   const getSubjectMarks = (subj) => {
-    if (!subj || !subj.final?.value) return 'N/A';
+    if (!subj || !subj.final?.value) return '';
     return subj.final.value;
   };
   
   // Prepare headers
   const baseHeaders = ["No", "Student Name"];
   if (!isIndexEmpty) { baseHeaders.push("Index Number"); }
+  if (!isCombinationEmpty) { baseHeaders.push("Combination"); }
   baseHeaders.push(...subjectNames);
   baseHeaders.push("Total Marks", "Average");
   if (!isDivisionEmpty) { baseHeaders.push("Division"); }
@@ -62,10 +64,14 @@ const generateClassResultsPDF = (groupedResults, className, examinationType) => 
   
   // Prepare data rows
   const tableData = groupedResults.map((student, index) => {
-    const rowData = [index + 1, student.studentName || 'N/A'];
+    const rowData = [index + 1, student.studentName || ''];
     
     if (!isIndexEmpty) { 
-      rowData.push(student.studentNumber || 'N/A'); 
+      rowData.push(student.studentNumber || ''); 
+    }
+    
+    if (!isCombinationEmpty) { 
+      rowData.push(student.combination || ''); 
     }
     
     // Add subject marks
@@ -80,10 +86,10 @@ const generateClassResultsPDF = (groupedResults, className, examinationType) => 
     rowData.push(student.average || 0);
     
     if (!isDivisionEmpty) { 
-      rowData.push(student.division || 'N/A'); 
+      rowData.push(student.division || ''); 
     }
     
-    rowData.push(student.position || 'N/A');
+    rowData.push(student.position || '');
     
     return rowData;
   });
@@ -96,6 +102,10 @@ const generateClassResultsPDF = (groupedResults, className, examinationType) => 
   
   if (!isIndexEmpty) { 
     fixedWidths['Index Number'] = 25; 
+  }
+  
+  if (!isCombinationEmpty) { 
+    fixedWidths['Combination'] = 30; 
   }
   
   if (!isDivisionEmpty) { 
@@ -136,6 +146,7 @@ const generateClassResultsPDF = (groupedResults, className, examinationType) => 
       'No': { halign: 'center', cellWidth: fixedWidths['No'] },
       'Student Name': { halign: 'left', cellWidth: fixedWidths['Student Name'] },
       'Index Number': { halign: 'center', cellWidth: fixedWidths['Index Number'] },
+      'Combination': { halign: 'center', cellWidth: fixedWidths['Combination'] },
       'Total Marks': { halign: 'center', cellWidth: fixedWidths['Total Marks'] },
       'Average': { halign: 'center', cellWidth: fixedWidths['Average'] },
       'Division': { halign: 'center', cellWidth: fixedWidths['Division'] },

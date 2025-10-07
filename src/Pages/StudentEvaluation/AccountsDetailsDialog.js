@@ -72,7 +72,7 @@ const CreateEvaluationSchema = yup.object().shape({
 
 const getInitialValues = (selectedStudent, existingData = null, terms = []) => ({
   studentId: selectedStudent?.id || "",
-  termId: existingData?.termId || (terms.find(term => term.status === 'ACTIVE')?.id || terms[0]?.id || ""),
+  termId: existingData?.termId || (terms && terms.length > 0 ? (terms.find(term => term.status === 'ACTIVE')?.id || terms[0]?.id || "") : ""),
   debts: existingData?.debts ? formatNumberWithCommas(existingData.debts) : "",
   firstTermFee: existingData?.firstTermFee ? formatNumberWithCommas(existingData.firstTermFee) : "",
   secondTermFee: existingData?.secondTermFee ? formatNumberWithCommas(existingData.secondTermFee) : "",
@@ -90,11 +90,11 @@ const AccountsDetailsDialog = ({ open, onClose, onSuccess, students, terms, sele
   // Load existing data when dialog opens
   useEffect(() => {
     const loadExistingData = async () => {
-      if (open && selectedStudent && terms.length > 0) {
+      if (open && selectedStudent && terms && terms.length > 0) {
         setIsLoading(true);
         try {
           // Try to get existing evaluation for the first active term
-          const activeTerm = terms.find(term => term.status === 'ACTIVE') || terms[0];
+          const activeTerm = terms && terms.length > 0 ? (terms.find(term => term.status === 'ACTIVE') || terms[0]) : null;
           if (activeTerm) {
             const data = await getEvaluationByTermStudent(activeTerm.id, selectedStudent.id);
             setExistingData(data);
@@ -109,7 +109,7 @@ const AccountsDetailsDialog = ({ open, onClose, onSuccess, students, terms, sele
     };
 
     loadExistingData();
-  }, [open, selectedStudent?.id, terms.length]);
+  }, [open, selectedStudent?.id, terms?.length]);
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
@@ -180,18 +180,18 @@ const AccountsDetailsDialog = ({ open, onClose, onSuccess, students, terms, sele
                     label="Term"
                     fullWidth
                     variant="filled"
-                    value={values.termId || (terms.find(term => term.status === 'ACTIVE')?.id || terms[0]?.id || "")}
+                    value={values.termId || (terms && terms.length > 0 ? (terms.find(term => term.status === 'ACTIVE')?.id || terms[0]?.id || "") : "")}
                     error={touched.termId && !!errors.termId}
                     helperText={touched.termId && errors.termId}
                     onChange={(e) => {
                       setFieldValue("termId", e.target.value);
                     }}
                   >
-                    {terms.map((t) => (
+                    {terms && terms.length > 0 ? terms.map((t) => (
                       <MenuItem key={t.id} value={t.id}>
                         {t.termName}
                       </MenuItem>
-                    ))}
+                    )) : null}
                   </Field>
                 </Grid>
 

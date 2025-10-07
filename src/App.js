@@ -29,7 +29,7 @@ const displayToolbar = () => {
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Toaster position="button-left" reverseOrder={false} />
+        <Toaster position="bottom-left" reverseOrder={false} />
         <div className="app">
         
           {displaySidebar() && <Sidebar isSidebarOpen={isSidebar} setIsSidebarOpen={setIsSidebar} />}

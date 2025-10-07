@@ -144,27 +144,53 @@ const useUserService = () => {
     };
 
     const uploadUserImage = async (file) => {
+        console.log('Uploading image for user ID:', id);
+        console.log('File details:', {
+            name: file.name,
+            size: file.size,
+            type: file.type
+        });
+
         if (!id || !file) {
             toast.error('User ID or file is missing');
             return;
         }
 
-        const config = {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        };
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            toast.error('Please select a valid image file');
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('File size must be less than 5MB');
+            return;
+        }
 
         const formData = new FormData();
-        formData.append('id', id);
         formData.append('file', file);
 
         try {
-            await axiosInstance.put(`${endpoints.users.uploadFile}`, formData, config);
+            // Use the correct endpoint with user ID in the URL
+            const endpoint = endpoints.users.uploadFile.replace('{id}', id);
+            console.log('Using endpoint:', endpoint);
+            
+            const response = await axiosInstance.put(endpoint, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                timeout: 30000,
+            });
+            
+            console.log('Upload response:', response);
             toast.success('Profile picture updated successfully');
+            return response.data;
         } catch (error) {
-            toast.error('Error updating profile picture');
             console.error('Error updating profile picture:', error);
+            console.error('Error response:', error.response);
+            toast.error('Error updating profile picture');
+            throw error;
         }
     };
 

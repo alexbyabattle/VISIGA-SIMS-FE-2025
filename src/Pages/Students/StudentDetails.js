@@ -25,6 +25,7 @@ import * as image from '../../assets';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Header from "../../components/Header";
 import { formatDate } from '../../utils/utils';
+import toast from 'react-hot-toast';
 
 const StudentDetails = () => {
   const [loading, setLoading] = useState(false);
@@ -35,7 +36,7 @@ const StudentDetails = () => {
   const [dateOfBirth, setDateOfBirth] = useState(null);
   const [joiningDate, setJoiningDate] = useState(null);
   const studentService = useStudentService();
-  const {  loadStudentDetails } = studentService;
+  const { loadStudentDetails } = studentService;
 
 
 
@@ -65,6 +66,7 @@ const StudentDetails = () => {
   const loadStudentData = async () => {
     if (studentId) {
       try {
+        setLoading(true);
         const data = await loadStudentDetails(studentId);
         setUserData(data);
         setGender(data?.gender || '');
@@ -72,37 +74,47 @@ const StudentDetails = () => {
         setJoiningDate(data?.joiningDate ? dayjs(data.joiningDate) : null);
       } catch (error) {
         console.error("Error loading student data:", error);
+        toast.error("Failed to load student data. Please try again.");
+      } finally {
+        setLoading(false);
       }
     }
   };
 
 
   const handleSaveAll = async () => {
-    const updateStudentDetailsDto = {
-      studentName: userData.studentName,
-      className: userData.className,
-      parishName: userData.parishName,
-      communityName: userData.communityName,
-      indexNumber: userData.studentNumber,
-      archdiocese: userData.archdiocese,
-      combination: userData.combination,
-      communityZone: userData.communityZone,
-      parishPriest: userData.parishPriest,
-      parishPriestPhoneNumber: userData.parishPriestPhoneNumber,
-      disease: userData.disease,
-      bloodGroup: userData.bloodGroup,
-      role: userData.role,
-      createdAt: formatDateForBackend(userData.createdAt),
-      dateOfBirth: formatDateForBackend(userData.dateOfBirth)
-    };
-
     try {
+      setLoading(true);
+      
+      const updateStudentDetailsDto = {
+        studentName: userData.studentName,
+        className: userData.className,
+        parishName: userData.parishName,
+        communityName: userData.communityName,
+        indexNumber: userData.studentNumber,
+        archdiocese: userData.archdiocese,
+        combination: userData.combination,
+        communityZone: userData.communityZone,
+        parishPriest: userData.parishPriest,
+        parishPriestPhoneNumber: userData.parishPriestPhoneNumber,
+        disease: userData.disease,
+        bloodGroup: userData.bloodGroup,
+        role: userData.role,
+        createdAt: formatDateForBackend(userData.createdAt),
+        dateOfBirth: formatDateForBackend(userData.dateOfBirth)
+      };
+
       await studentService.updateStudentDetails(studentId, updateStudentDetailsDto);
-      loadStudentData();
+      toast.success("Student details updated successfully!");
+      await loadStudentData();
     } catch (error) {
       console.error('Error updating user details:', error);
+      toast.error("Failed to update student details. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
+
 
   
 
@@ -120,6 +132,7 @@ const StudentDetails = () => {
         title="USER DETAILS"
       />
 
+
       <Box
         elevation={3}
         sx={{
@@ -134,12 +147,12 @@ const StudentDetails = () => {
             <Box display="flex" alignItems="center" mb={2}>
               <Box sx={{ position: 'relative', display: 'inline-block' }}>
                 <Avatar
-                  alt={userData.name || 'Profile Picture'}
-                  src={userData.photoUrl || userData.profilePicture}
+                  alt={userData.studentName || 'Profile Picture'}
+                  src={userData.photoUrl ? `${process.env.REACT_APP_API_URL || 'http://localhost:8086'}${userData.photoUrl}` : null}
                   sx={{
                     width: '100px',
                     height: '100px',
-                    border: userData.photoUrl || userData.profilePicture ? '2px solid #ccc' : '2px solid red',
+                    border: userData.photoUrl ? '2px solid #ccc' : '2px solid red',
                   }}
                 />
                 <Tooltip title="Choose image">
@@ -221,9 +234,11 @@ const StudentDetails = () => {
               </Grid>
             </Grid>
 
-            <Button variant="contained" color="secondary" sx={{ mt: 2 }} onClick={handleSaveAll}>
-              Save All
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+              <Button variant="contained" color="secondary" onClick={handleSaveAll}>
+                Save All
+              </Button>
+            </Box>
           </Box>
         )}
 

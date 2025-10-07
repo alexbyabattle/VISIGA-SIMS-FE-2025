@@ -17,7 +17,7 @@ export const endpoints = {
     getUser: '/users/',
     getUsers: '/users',
     status: '/users/status',
-    uploadFile: '/files/photo'
+    uploadFile: '/users/{id}/photo'
   },
 
 
@@ -75,7 +75,7 @@ export const endpoints = {
     parents: '/students/parents/',
     class_students: '/students/student_in_class/',
     generateIndexNo: '/students/generate-numbers/',
-    uploadStudentPhoto: '/files/student/photo'
+    uploadStudentPhoto: '/students/{id}/photo'
   },
 
   parents: {

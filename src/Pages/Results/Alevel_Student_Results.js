@@ -47,6 +47,10 @@ const AlevelStudentResults = () => {
     let studentName = "";
     let examinationType = "";
     let className = "";
+    let position = "";
+    let average = "";
+    let totalStudents = "";
+    let combination = "";
 
     data.forEach((item, index) => {
       // Extract general info from the first record
@@ -54,6 +58,10 @@ const AlevelStudentResults = () => {
         studentName = item.studentName;
         examinationType = item.examinationType;
         className = item.className;
+        position = item.position || "";
+        average = item.average || "";
+        totalStudents = item.totalStudents || "";
+        combination = item.combination || "";
       }
 
       const marks = parseFloat(item.marks) || 0;
@@ -69,9 +77,14 @@ const AlevelStudentResults = () => {
       (sum, s) => sum + parseFloat(s.marks),
       0
     );
-    const average = subjects.length
+    const calculatedAverage = subjects.length
       ? (totalMarks / subjects.length).toFixed(2)
       : "0.00";
+
+    // Format position with total students if available
+    const formattedPosition = position && totalStudents 
+      ? `${position} out of ${totalStudents}`
+      : position || "";
 
     return {
       studentName,
@@ -79,7 +92,9 @@ const AlevelStudentResults = () => {
       className,
       subjects,
       totalMarks: totalMarks.toFixed(2),
-      gpa: average,
+      gpa: average || calculatedAverage,
+      position: formattedPosition,
+      combination: combination || "N/A",
     };
   };
 
@@ -114,6 +129,10 @@ const AlevelStudentResults = () => {
                 <Typography>{studentResult.className}</Typography>
               </Box>
               <Box>
+                <Typography fontWeight="bold">Combination</Typography>
+                <Typography>{studentResult.combination}</Typography>
+              </Box>
+              <Box>
                 <Typography fontWeight="bold">Total Marks</Typography>
                 <Typography>{studentResult.totalMarks}</Typography>
               </Box>
@@ -121,6 +140,12 @@ const AlevelStudentResults = () => {
                 <Typography fontWeight="bold">Average</Typography>
                 <Typography>{studentResult.gpa}</Typography>
               </Box>
+              {studentResult.position && (
+                <Box>
+                  <Typography fontWeight="bold">Position</Typography>
+                  <Typography>{studentResult.position}</Typography>
+                </Box>
+              )}
             </Box>
           </Card>
 

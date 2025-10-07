@@ -399,12 +399,7 @@ const ClassResultsMarks100 = () => {
       <Box p={2} ml={2} mr={2}>
         <Header title="CLASS RESULTS" />
         <Box mb={2} display="flex" justifyContent="flex-end">
-          <ExportPDFButton 
-            groupedResults={groupedResults} 
-            isClassResults={true}
-            className={groupedResults[0]?.className || 'N/A'}
-            examinationType={groupedResults[0]?.examinationType || 'N/A'}
-          />
+          <ExportPDFButton groupedResults={groupedResults} />
         </Box>
 
         {isLoading ? (

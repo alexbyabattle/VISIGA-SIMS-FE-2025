@@ -143,6 +143,7 @@ const useStudentEvaluationService = () => {
               id: evaluation.id,
               studentId: evaluation.studentId,
               studentName: evaluation.studentName,
+              studentPhotoUrl: evaluation.studentPhotoUrl,
               termId: evaluation.termId,
               termName: evaluation.termName,
               spiritualLife: evaluation.spiritualLife,
@@ -209,7 +210,17 @@ const useStudentEvaluationService = () => {
       const response = await axiosInstance.get(
         `${endpoints.studentEvaluations.getByTermStudent}/${termId}/${studentId}`
       );
-      return response.data.data;
+      const data = response.data.data;
+      
+      // Ensure studentPhotoUrl is included in the response
+      if (data) {
+        return {
+          ...data,
+          studentPhotoUrl: data.studentPhotoUrl || data.student?.photoUrl || data.photoUrl
+        };
+      }
+      
+      return data;
     } catch (error) {
       // Don't show toast for 404 errors (evaluation doesn't exist)
       if (error.response?.status !== 404) {
@@ -247,6 +258,42 @@ const useStudentEvaluationService = () => {
       throw error;
     } finally {
       toggleLoading();
+    }
+  };
+
+  // Get all student evaluations (simple version for table display)
+  const getAllStudentEvaluations = async () => {
+    try {
+      const response = await axiosInstance.get(endpoints.studentEvaluations.All);
+      const data = response.data.data || [];
+      
+      // Map the data to ensure studentPhotoUrl is included
+      return data.map((evaluation) => ({
+        id: evaluation.id,
+        studentId: evaluation.studentId,
+        studentName: evaluation.studentName,
+        studentPhotoUrl: evaluation.studentPhotoUrl || evaluation.student?.photoUrl,
+        termId: evaluation.termId,
+        termName: evaluation.termName,
+        spiritualLife: evaluation.spiritualLife,
+        academicLife: evaluation.academicLife,
+        manualWork: evaluation.manualWork,
+        health: evaluation.health,
+        leadershipSkills: evaluation.leadershipSkills,
+        sports: evaluation.sports,
+        debts: evaluation.debts,
+        firstTermFee: evaluation.firstTermFee,
+        secondTermFee: evaluation.secondTermFee,
+        firstTermExamFee: evaluation.firstTermExamFee,
+        secondTermExamFee: evaluation.secondTermExamFee,
+        firstTermOtherContribution: evaluation.firstTermOtherContribution,
+        secondTermOtherContribution: evaluation.secondTermOtherContribution,
+        rectorComments: evaluation.rectorComments,
+        dateOfOpening: evaluation.dateOfOpening,
+      }));
+    } catch (error) {
+      console.error('Error fetching all student evaluations:', error);
+      throw error;
     }
   };
 
@@ -291,6 +338,7 @@ const useStudentEvaluationService = () => {
     updateEvaluationByTermStudent,
     updatePartialEvaluationByTermStudent,
     fetchEvaluations,
+    getAllStudentEvaluations,
     getEvaluationById,
     getEvaluationByTermStudent,
     getEvaluationByTermIdAndStudentId,

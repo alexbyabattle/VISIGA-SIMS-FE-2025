@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, useTheme, Grid, Card, CardContent, Avatar, Button } from '@mui/material';
+import { Box, Typography, useTheme, Avatar, Button } from '@mui/material';
 import { tokens } from '../../theme';
 import { useNavigate, useParams } from "react-router-dom";
 import useTeacherService from '../../api/services/teacherService';
 import useUserService from '../../api/services/userService';
 import * as image from '../../assets';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import Header from "../../components/Header";
 import DetailsBox from '../../components/DetailsBox';
 import { getUserFromCookies } from '../../utils/Cookie-utils';
 
@@ -40,7 +39,7 @@ const Teacher_Data = () => {
           setTeacherDetails(teacherData);
           setTeacherSubjects(teacherSubjectsData || []);
         } catch (error) {
-          console.error("Failed to load teacher data:", error);
+          // Handle error silently or show user-friendly message
         } finally {
           setIsLoading(false);
         }
@@ -165,18 +164,49 @@ const Teacher_Data = () => {
       </Box>
 
       {/* Profile Section */}
-      <Box display="flex" alignItems="center" mb={2}>
-        <Box sx={{ position: 'relative', display: 'inline-block' }}>
-          <Avatar alt="profile" src={teacherDetails?.photoUrl} sx={{ width: 100, height: 100 }} />
+      <Box 
+        display="flex" 
+        alignItems="center" 
+        mb={2}
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        textAlign={{ xs: 'center', sm: 'left' }}
+      >
+        <Box sx={{ position: 'relative', display: 'inline-block', mb: { xs: 2, sm: 0 } }}>
+          <Avatar 
+            alt="profile" 
+            src={teacherDetails?.photoUrl ? `${process.env.REACT_APP_API_URL || 'http://localhost:8086'}${teacherDetails.photoUrl}` : null} 
+            sx={{ 
+              width: { xs: 80, sm: 100, md: 120 }, 
+              height: { xs: 80, sm: 100, md: 120 },
+              border: teacherDetails?.photoUrl ? '2px solid #ccc' : '2px solid red'
+            }} 
+          />
         </Box>
-        <Box ml={3} mb={3}>
-          <Typography variant="body1">
+        <Box ml={{ xs: 0, sm: 3 }} mb={3}>
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              fontSize: { xs: '0.9rem', sm: '1rem' },
+              mb: { xs: 0.5, sm: 0 }
+            }}
+          >
             <strong>Name:</strong> {teacherDetails?.name || 'N/A'}
           </Typography>
-          <Typography variant="body1">
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              fontSize: { xs: '0.9rem', sm: '1rem' },
+              mb: { xs: 0.5, sm: 0 }
+            }}
+          >
             <strong>Email:</strong> {teacherDetails?.email || 'N/A'}
           </Typography>
-          <Typography variant="body1">
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              fontSize: { xs: '0.9rem', sm: '1rem' }
+            }}
+          >
             <strong>Phone:</strong> {teacherDetails?.phoneNumber || 'N/A'}
           </Typography>
         </Box>
@@ -184,14 +214,23 @@ const Teacher_Data = () => {
 
       {/* Subjects Section */}
       <Box>
-        <Typography variant="h4" align="start">VIEW SUBJECTS ASSIGNED</Typography>
+        <Typography 
+          variant="h4" 
+          align="start"
+          sx={{ 
+            fontSize: { xs: '1.2rem', sm: '1.5rem', md: '2rem' },
+            mb: 2
+          }}
+        >
+          VIEW SUBJECTS ASSIGNED
+        </Typography>
       </Box>
 
       <Box
         display="grid"
         gridTemplateColumns={{ xs: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
-        gridAutoRows="140px"
-        gap="20px"
+        gridAutoRows={{ xs: 'auto', sm: '140px' }}
+        gap={{ xs: '10px', sm: '20px' }}
       >
         {teacherSubjects
           .filter(entry => role === 'ADMIN' || entry.clazz?.status === 'ONGOING')
@@ -236,8 +275,19 @@ const Teacher_Data = () => {
                     onClick={() =>
                       openClassExamsPage(entry.subject.id, entry.id, entry.clazz.id)
                     }
+                    sx={{
+                      fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
+                      padding: { xs: '4px 8px', sm: '6px 16px', md: '8px 16px' },
+                      minWidth: { xs: 'auto', sm: 'auto' },
+                      whiteSpace: { xs: 'nowrap', sm: 'normal' }
+                    }}
                   >
-                    VIEW & ADD RESULTS
+                    <Box sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                      VIEW & ADD RESULTS
+                    </Box>
+                    <Box sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                      VIEW RESULTS
+                    </Box>
                   </Button>
                 }
               />

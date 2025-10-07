@@ -1,30 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Typography,
-  Box,
-  Tooltip,
-  Button,
-  Avatar,
-  Grid,
-  Card,
-  CardContent
-} from '@mui/material';
-import { PhotoCamera, AddToQueue, DoDisturbOn } from '@mui/icons-material';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useTheme } from '@mui/material';
+import { Box, Typography, useTheme, Avatar, Button } from '@mui/material';
 import { tokens } from '../../theme';
-import { getUserFromCookies } from '../../utils/Cookie-utils';
-import * as image from '../../assets';
+import { useNavigate } from 'react-router-dom';
 import useParentService from '../../api/services/ParentsService';
+import * as image from '../../assets';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import AssignmentDialog from './ParentsAssignmentDialog';
 import UnAssignmentDialog from './ParentsUnAssignmentDialog';
-import DetailsBox from '../../components/DetailsBox';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import Header from "../../components/Header";
+import { getUserFromCookies } from '../../utils/Cookie-utils';
 
 const ParentViewStudentDetails = () => {
   const user = getUserFromCookies();
-  const role = user?.data?.role;
   const id = user?.data?.id;
   const theme = useTheme();
   const borderColor = theme.palette.mode === 'dark' ? 'white' : 'black';
@@ -35,6 +21,7 @@ const ParentViewStudentDetails = () => {
   const [assignedStudents, setAssignedStudents] = useState([]);
   const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
   const [isUnAssignmentDialogOpen, setIsUnAssignmentDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const { loadParentDetails, getAssignedStudents } = useParentService();
 
@@ -42,31 +29,31 @@ const ParentViewStudentDetails = () => {
     const fetchData = async () => {
       if (id) {
         try {
+          setLoading(true);
           const parentData = await loadParentDetails(id);
           const studentData = await getAssignedStudents(id);
           setParentDetails(parentData);
           setAssignedStudents(studentData || []);
         } catch (error) {
-          console.error("Failed to load parent or student data:", error);
+          console.error('Error fetching parent/student data:', error);
+        } finally {
+          setLoading(false);
         }
       }
     };
-
     fetchData();
   }, [id]);
 
   const openStudentDetailsPage = (studentId) => {
-    if (studentId) {
-      navigate(`/student_details/${studentId}`);
-    } else {
-      // console.warn("Missing studentId  when trying to navigate.");
-    }
+    navigate(`/student_details/${studentId}`);
   };
 
-  // console.log("assigned students  are" , assignedStudents);
-  
+  if (loading) {
+    return <LoadingSpinner message="Loading parent and student data..." height="60vh" />;
+  }
+
   return (
-    <Box sx={{ mx: 2 }}>
+    <Box sx={{ ml: '20px', mr: '20px' }}>
       {/* Dialogs */}
       <AssignmentDialog
         parentId={id}
@@ -83,7 +70,6 @@ const ParentViewStudentDetails = () => {
 
       {/* Header */}
       <Box
-        height="auto"
         display="flex"
         flexDirection="row"
         justifyContent="space-between"
@@ -98,15 +84,9 @@ const ParentViewStudentDetails = () => {
           alignItems="center"
           borderRight={{ xs: 'none', md: `1px solid ${borderColor}` }}
           p={1}
-          overflow="hidden"
           justifyContent="center"
         >
-          <Box
-            display="flex"
-            flexDirection={{ xs: 'column', md: 'row' }}
-            alignItems="center"
-            textAlign={{ xs: 'center', md: 'left' }}
-          >
+          <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} alignItems="center">
             <Box
               component="img"
               src={image.visigalogo}
@@ -119,11 +99,11 @@ const ParentViewStudentDetails = () => {
               }}
             />
             <Typography
-              variant="h7"
+              variant="h6"
               fontWeight="bold"
-              sx={{ fontSize: { xs: '0.7rem', sm: '1.1rem', md: '1.5rem' } }}
+              sx={{ fontSize: { xs: '0.8rem', sm: '1rem', md: '1.4rem' } }}
             >
-              St Mary's Junior Seminary (VISIGA SEMINARY)
+              St Mary&apos;s Junior Seminary (VISIGA SEMINARY)
             </Typography>
           </Box>
         </Box>
@@ -141,9 +121,9 @@ const ParentViewStudentDetails = () => {
           <Typography
             variant="h6"
             fontWeight="bold"
-            sx={{ fontSize: { xs: '0.9rem', sm: '1.1rem', md: '1.4rem' } }}
+            sx={{ fontSize: { xs: '1rem', sm: '1.2rem', md: '1.5rem' } }}
           >
-              VIEW AND EDIT  DETAILS OF STUDENT
+            VIEW & EDIT DETAILS OF SEMINARIAN
           </Typography>
         </Box>
 
@@ -153,15 +133,9 @@ const ParentViewStudentDetails = () => {
           display="flex"
           alignItems="center"
           p={1}
-          overflow="hidden"
           justifyContent="center"
         >
-          <Box
-            display="flex"
-            flexDirection={{ xs: 'column', md: 'row' }}
-            alignItems="center"
-            textAlign={{ xs: 'center', md: 'left' }}
-          >
+          <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} alignItems="center">
             <Box
               component="img"
               src={image.cathedral5}
@@ -176,7 +150,7 @@ const ParentViewStudentDetails = () => {
             <Typography
               variant="h6"
               fontWeight="bold"
-              sx={{ fontSize: { xs: '0.7rem', sm: '1.1rem', md: '1.5rem' } }}
+              sx={{ fontSize: { xs: '0.8rem', sm: '1rem', md: '1.4rem' } }}
             >
               Seminary under Archdiocese of Dar es Salaam
             </Typography>
@@ -184,20 +158,31 @@ const ParentViewStudentDetails = () => {
         </Box>
       </Box>
 
-
-
-
-      {/* Profile */}
-      <Box display="flex" alignItems="center" mb={3}>
-        <Box sx={{ position: 'relative', display: 'inline-block' }}>
+      {/* Parent Profile */}
+      <Box
+        display="flex"
+        alignItems="center"
+        mb={2}
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        textAlign={{ xs: 'center', sm: 'left' }}
+      >
+        <Box sx={{ position: 'relative', display: 'inline-block', mb: { xs: 2, sm: 0 } }}>
           <Avatar
-            alt="parent"
-            src={parentDetails?.photoUrl || image.defaultProfile}
-            sx={{ width: 100, height: 100 }}
+            alt={parentDetails?.name || 'Parent Picture'}
+            src={
+              parentDetails?.photoUrl
+                ? `${process.env.REACT_APP_API_URL || 'http://localhost:8086'}${parentDetails.photoUrl}`
+                : image.defaultProfile
+            }
+            sx={{
+              width: { xs: 80, sm: 100, md: 120 },
+              height: { xs: 80, sm: 100, md: 120 },
+              border: parentDetails?.photoUrl ? '2px solid #ccc' : '2px solid red'
+            }}
           />
         </Box>
-        <Box ml={3}>
-          <Typography><strong>Name:</strong> {parentDetails?.name || 'N/A'}</Typography>
+        <Box ml={{ xs: 0, sm: 3 }} mb={3}>
+          <Typography><strong>Parent Name:</strong> {parentDetails?.name || 'N/A'}</Typography>
           <Typography><strong>Email:</strong> {parentDetails?.email || 'N/A'}</Typography>
           <Typography><strong>Phone:</strong> {parentDetails?.phoneNumber || 'N/A'}</Typography>
           <Typography><strong>Status:</strong> {parentDetails?.status || 'N/A'}</Typography>
@@ -205,15 +190,25 @@ const ParentViewStudentDetails = () => {
         </Box>
       </Box>
 
+      {/* Students Section */}
+      <Typography
+        variant="h4"
+        align="start"
+        sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem', md: '2rem' }, mb: 2 }}
+      >
+        VIEW & EDIT DETAILS
+      </Typography>
 
-
-      {/* Assigned Students */}
-      <Typography variant="h5" mb={2}> VIEW  AND EDIT SEMINARIAN DETAILS </Typography>
+      {/* ✅ Responsive Student Grid */}
       <Box
         display="grid"
-        gridTemplateColumns={{ xs: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
-        gridAutoRows="auto"
-        gap="20px"
+        gridTemplateColumns={{
+          xs: 'repeat(1, 1fr)',
+          sm: 'repeat(2, 1fr)',
+          md: 'repeat(3, 1fr)',
+          lg: 'repeat(4, 1fr)'
+        }}
+        gap={3}
       >
         {assignedStudents.map((item, index) => {
           const student = item?.student;
@@ -222,30 +217,37 @@ const ParentViewStudentDetails = () => {
           return (
             <Box
               key={index}
-              backgroundColor={colors.primary[400]}
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
+              sx={{
+                backgroundColor: colors.primary[400],
+                borderRadius: '8px',
+                padding: '16px',
+                minHeight: '200px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                boxShadow: 2,
+                overflow: 'hidden',
+              }}
             >
-              <DetailsBox
-                name1="STUDENT"
-                clazz={student.name || 'N/A'}
-                class_createdAt={student.createdAt ? new Date(student.createdAt).toLocaleDateString() : 'N/A'}
-                class_status={student.status || 'N/A'}
-                name2="PARISH"
-                subject={student.parishName || 'N/A'}
-                subject_createdAt={student.archdiocese || 'N/A'}
-                subject_status={student.className || 'N/A'}
-                icon={
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={() => openStudentDetailsPage( student.id )}
-                  >
-                    Add info_
-                  </Button>
-                }
-              />
+              {/* Student Info with Labels */}
+              <Typography variant="subtitle2"><strong>Seminarian Name:</strong> {student.name || 'N/A'}</Typography>
+              <Typography variant="subtitle2"><strong>Class:</strong> {student.className || 'N/A'}</Typography>
+              <Typography variant="subtitle2"><strong>Parish:</strong> {student.parishName || 'N/A'}</Typography>
+              <Typography variant="subtitle2"><strong>Archdiocese:</strong> {student.archdiocese || 'N/A'}</Typography>
+              <Typography variant="subtitle2"><strong>Status:</strong> {student.status || 'N/A'}</Typography>
+              <Typography variant="subtitle2"><strong>Created At:</strong> {student.createdAt ? new Date(student.createdAt).toLocaleDateString() : 'N/A'}</Typography>
+
+              {/* Action Button */}
+              <Box display="flex" justifyContent="center" mt={2}>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  size="small"
+                  onClick={() => openStudentDetailsPage(student.id)}
+                >
+                  View / Edit
+                </Button>
+              </Box>
             </Box>
           );
         })}

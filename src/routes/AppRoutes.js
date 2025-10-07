@@ -52,6 +52,7 @@ import StudentResultsMarks100 from "../Pages/Results/Student_Results_Marks100";
 import AlevelClassResultsMarks100 from "../Pages/Results/Alevel_Class_Results_Marks100";
 import ClassResultsMarks100 from "../Pages/Results/Class_Results_Marks100";
 import StudentEvaluationReport from "../Pages/StudentEvaluation/StudentEvaluationReport";
+import StudentEvaluationTable from "../Pages/StudentEvaluation/StudentEvaluationTable";
 
 const AppRoutes = () => {
   return (
@@ -71,7 +72,7 @@ const AppRoutes = () => {
       <Route path="/subjects" element={<ProtectedRoute element={<Subjects />} allowedRoles={['ADMIN', 'MANAGER']} />} />
       <Route path="/subject_details/:id" element={<ProtectedRoute element={<Subject_Data />} allowedRoles={['ADMIN', 'MANAGER']} />} />
 
-      <Route path="/schoolTimetable" element={<ProtectedRoute element={<SchoolTimetable />} allowedRoles={['ADMIN', 'TEACHER']} />} />
+      <Route path="/schoolTimetable" element={<ProtectedRoute element={<SchoolTimetable />} allowedRoles={['ADMIN', 'TEACHER', 'PARENT', 'ACADEMIC', 'MANAGER']} />} />
       <Route path="/teachersDuty" element={<ProtectedRoute element={<TeacherDutyRoster />} allowedRoles={['ADMIN', 'TEACHER']} />} />
       <Route path="/classTimetable" element={<ProtectedRoute element={<ClassTimetable />} allowedRoles={['ADMIN', 'TEACHER']} />} />
 
@@ -100,7 +101,7 @@ const AppRoutes = () => {
       <Route  path="/student_results_marks/:studentId/:classId/:examId" element={ <ProtectedRoute element={<StudentResultsMarks100 />} allowedRoles={['ADMIN', 'MANAGER', 'PARENT']} />  } />
       <Route  path="/alevel_student_results/:studentId/:classId/:examId" element={ <ProtectedRoute element={<AlevelStudentResults />} allowedRoles={['ADMIN', 'MANAGER', 'PARENT']} />  } />
       <Route  path="/alevel_student_results_marks/:studentId/:classId/:examId" element={ <ProtectedRoute element={<AlevelStudentResultsMark100 />} allowedRoles={['ADMIN', 'MANAGER', 'PARENT']} />  } />
-      <Route path="/student_details/:studentId" element={<ProtectedRoute element={<StudentDetails />} allowedRoles={['ADMIN', 'MANAGER' ,'PARENT']} />} />
+      <Route path="/student_details/:studentId" element={<ProtectedRoute element={<StudentDetails />} allowedRoles={['ADMIN', 'MANAGER' ,'PARENT' ,'ACADEMIC']} />} />
       <Route path="/student_parents/:studentId" element={<ProtectedRoute element={<ParentsOfStudent />} allowedRoles={['ADMIN', 'MANAGER']} />} />
 
       <Route path="/terms" element={<ProtectedRoute element={<Term />} allowedRoles={['ADMIN', 'MANAGER']} />} />
@@ -110,6 +111,7 @@ const AppRoutes = () => {
       <Route  path="/term_student_results/:studentId/:classId/:termId" element={ <ProtectedRoute element={<StudentReportResults />} allowedRoles={['ADMIN', 'MANAGER', 'PARENT']} />  } />
        
       <Route path="/student_evaluation_report/:termId/:studentId" element={ <ProtectedRoute element={<StudentEvaluationReport />} allowedRoles={['ADMIN', 'MANAGER', 'PARENT']} /> } />
+      <Route path="/students-evaluation-table" element={ <ProtectedRoute element={<StudentEvaluationTable />} allowedRoles={['ADMIN', 'MANAGER']} /> } />
 
       <Route path="/sessions/:userId" element={<ProtectedRoute element={<Sessions />} allowedRoles={['ADMIN', 'MANAGER']} />} />
       
