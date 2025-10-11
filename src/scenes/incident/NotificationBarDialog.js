@@ -75,13 +75,13 @@ const NotificationBarDialog = ({ open, onClose, onIncidentCountUpdate }) => {
 
 
     const loadIncidents = async () => {
-        if (!userDetails) return;
+        if (!userDetails || !open) return;
 
         const { id } = userDetails;
         const accessToken = localStorage.getItem('accessToken');
 
         if (!accessToken || !id) {
-            console.error('Access token or user ID not found in local storage');
+            // Silently return without logging error during login process
             return;
         }
 
@@ -132,10 +132,10 @@ const NotificationBarDialog = ({ open, onClose, onIncidentCountUpdate }) => {
     }, []); // This will run only once on component mount
 
     useEffect(() => {
-        if (userDetails) {
+        if (userDetails && open) {
             loadIncidents();
         }
-    }, [userDetails]); // Only run when userDetails is available
+    }, [userDetails, open]); // Only run when userDetails is available and dialog is open
 
     return (
         <>

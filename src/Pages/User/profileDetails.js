@@ -44,10 +44,6 @@ const ProfileDetails = () => {
   const userService = useUserService();
   const { isLoading } = userService;
 
-  // Debug logging
-  console.log('ProfileDetails - passwordDialogOpen:', passwordDialogOpen);
-
-  
 
   const handleChange = (event) => {
     setUserData({ ...userData, [event.target.name]: event.target.value });
@@ -172,11 +168,7 @@ const ProfileDetails = () => {
                       variant="contained"
                       color="secondary"
                       sx={{ mt: { xs: 2, md: 0 } }}
-                      onClick={() => {
-                        
-                        
-                        setPasswordDialogOpen(true);
-                      }}
+                      onClick={() => setPasswordDialogOpen(true)}
                     >
                       Change Password
                     </Button>
@@ -216,7 +208,11 @@ const ProfileDetails = () => {
                     onChange={handleDateChange}
                     disableFuture
                     views={['day', 'month', 'year', 'hours', 'minutes']}
-                    renderInput={(params) => <TextField {...params} fullWidth />}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true
+                      }
+                    }}
                   />
                 </Grid>
               </LocalizationProvider>

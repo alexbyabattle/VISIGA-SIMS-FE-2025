@@ -6,22 +6,23 @@ import {
   Typography,
   useMediaQuery,
   Divider,
+  Button,
 } from "@mui/material";
 import { useParams } from "react-router-dom";
 import { DataGrid } from "@mui/x-data-grid";
 import useResultService from "../../api/services/ResultsService";
+import generateStudentTermResultsReport from "../../utils/StudentTermResultsReport";
 
 const StudentReportResults = () => {
-  const { classId, termId, studentId } = useParams(); 
+  const { classId, termId, studentId } = useParams();
   const { getResultsByTermAndClass } = useResultService();
 
   const [studentResult, setStudentResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [totalStudents, setTotalStudents] = useState(0);
 
-  const isSmallScreen = useMediaQuery("(max-width:600px)"); // ✅ detect small screens
+  const isSmallScreen = useMediaQuery("(max-width:600px)");
 
-  // Helper function to check if a subject has all zero values
   const hasAllZeroValues = (subjectDetails) => {
     return (
       (subjectDetails.exam10Average === 0 || subjectDetails.exam10Average === null) &&
@@ -31,18 +32,15 @@ const StudentReportResults = () => {
     );
   };
 
-  // Filter out subjects with all zero values
   const getFilteredSubjects = () => {
     if (!studentResult?.subjects) return [];
-    
-    return Object.entries(studentResult.subjects).filter(([subject, details]) => 
-      !hasAllZeroValues(details)
+    return Object.entries(studentResult.subjects).filter(
+      ([, details]) => !hasAllZeroValues(details)
     );
   };
 
-  // Helper function to format GPA with 1 decimal place
   const formatGPA = (gpa) => {
-    if (gpa === null || gpa === undefined || gpa === '') return 'N/A';
+    if (gpa === null || gpa === undefined || gpa === "") return "N/A";
     return parseFloat(gpa).toFixed(1);
   };
 
@@ -55,17 +53,12 @@ const StudentReportResults = () => {
     const loadResults = async () => {
       try {
         const response = await getResultsByTermAndClass(termId, classId);
-
         if (response?.data) {
-          const studentData = response.data.find(
-            (s) => s.studentId === studentId
-          );
+          const studentData = response.data.find((s) => s.studentId === studentId);
           setStudentResult(studentData || null);
-          // Set total number of students in the class
           setTotalStudents(response.data.length);
         }
       } catch (e) {
-        console.error("Error fetching student results:", e);
         setStudentResult(null);
       } finally {
         setLoading(false);
@@ -75,7 +68,6 @@ const StudentReportResults = () => {
     loadResults();
   }, [classId, termId, studentId]);
 
-  // ✅ Define columns for large screen table
   const columns = [
     { field: "subject", headerName: "Subject", flex: 1, minWidth: 100 },
     { field: "exam10Average", headerName: "Exercise(10)", flex: 1, minWidth: 50 },
@@ -95,12 +87,44 @@ const StudentReportResults = () => {
         <>
           {/* ✅ Header Card */}
           <Card sx={{ p: 2, borderLeft: "6px solid green", mb: 2 }}>
-            <Typography variant="h6" color="green" fontWeight="bold">
-              Provisional Results:
-            </Typography>
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems={isSmallScreen ? "stretch" : "center"}
+              flexDirection={isSmallScreen ? "column" : "row"}
+              gap={2}
+              mb={2}
+            >
+              <Typography
+                variant="h6"
+                color="green"
+                fontWeight="bold"
+                textAlign={isSmallScreen ? "center" : "left"}
+              >
+                Provisional Results:
+              </Typography>
+
+              {/* ✅ Responsive Button */}
+              <Button
+                fullWidth={isSmallScreen}
+                variant="contained"
+                color="primary"
+                onClick={() => generateStudentTermResultsReport(studentResult, totalStudents)}
+                sx={{
+                  backgroundColor: "#502eccff",
+                  "&:hover": {
+                    backgroundColor: "#3d2399",
+                  },
+                  py: 1.2,
+                }}
+              >
+                📄 Download Report
+              </Button>
+            </Box>
+
             <Box display="flex" gap={4} flexWrap="wrap">
               <Box>
-                <Typography fontWeight="bold">Student Name</Typography>
+                <Typography fontWeight="bold">Seminarian Name</Typography>
                 <Typography>{studentResult.studentName}</Typography>
               </Box>
               <Box>
@@ -132,9 +156,8 @@ const StudentReportResults = () => {
             </Box>
           </Card>
 
-          {/* ✅ Responsive Results */}
+          {/* ✅ Responsive Results Section */}
           {isSmallScreen ? (
-            // 📱 Small screen: stacked cards
             <Box display="flex" flexDirection="column" gap={2}>
               {getFilteredSubjects().map(([subject, details], idx) => (
                 <Card key={idx} sx={{ p: 2 }}>
@@ -151,16 +174,13 @@ const StudentReportResults = () => {
               ))}
             </Box>
           ) : (
-            // 💻 Large screen: DataGrid table
             <Box height={400}>
               <DataGrid
-                rows={getFilteredSubjects().map(
-                  ([subject, details], idx) => ({
-                    id: idx,
-                    subject,
-                    ...details,
-                  })
-                )}
+                rows={getFilteredSubjects().map(([subject, details], idx) => ({
+                  id: idx,
+                  subject,
+                  ...details,
+                }))}
                 columns={columns}
                 pageSize={10}
                 rowsPerPageOptions={[10]}

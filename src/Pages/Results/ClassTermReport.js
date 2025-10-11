@@ -38,8 +38,30 @@ const ClassTermReport = () => {
       setIsLoading(true);
       try {
         const data = await getResultsByTermAndClass(termId, classId);
+        console.log("Fetched term results data:", data); // Debug log
         if (data?.data) {
-          setResults(data.data);
+          // Extract class and term info from the first result if available
+          const firstResult = data.data?.[0];
+          const className = data.className || firstResult?.className || "N/A";
+          
+          // Try multiple possible fields for term name
+          const termName = data.termName || 
+                          firstResult?.termName || 
+                          data.term?.name || 
+                          data.term?.termName ||
+                          firstResult?.term?.name ||
+                          firstResult?.term?.termName ||
+                          "N/A";
+          
+          console.log("Extracted term name:", termName); // Debug log
+          
+          const processedWithDetails = data.data.map(student => ({
+            ...student,
+            className: className,
+            termName: termName
+          }));
+          
+          setResults(processedWithDetails);
         } else {
           setResults([]);
         }
@@ -331,7 +353,9 @@ const ClassTermReport = () => {
 
   return (
     <Box m="20px">
-      <Header title="CLASS TERM REPORT" subtitle="View detailed results" />
+      <Header
+        title={`CLASS TERM REPORT FOR CLASS NAME: ${results[0]?.className || "N/A"} `}
+      />
       <Box mb={2} display="flex" justifyContent="flex-end">
         <button
           onClick={() => generateTermResultsPDF(results, results[0]?.termName || 'N/A', results[0]?.className || 'N/A')}

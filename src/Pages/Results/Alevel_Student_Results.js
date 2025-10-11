@@ -117,7 +117,7 @@ const AlevelStudentResults = () => {
             </Typography>
             <Box display="flex" gap={4} flexWrap="wrap">
               <Box>
-                <Typography fontWeight="bold">Student Name</Typography>
+                <Typography fontWeight="bold">Seminarian Name</Typography>
                 <Typography>{studentResult.studentName}</Typography>
               </Box>
               <Box>

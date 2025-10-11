@@ -35,7 +35,7 @@ const initialValues = {
 
 const CreateDialog = ({ open, onClose, onSuccess, clazzId }) => {
     const { createStudent } = useStudentService();
-    const combinations = ["HGE", "PCM", "PCB", "HGL", "EGM", "O-LEVEL"];
+    const combinations = ["HGE", "PCM", "PCB", "HGL", "EGM", "O-LEVEL" , "SCIENCE" , "ARTS" , "COMMERCIAL"];
 
     const handleSubmit = async (values) => {
         const studentDto = {

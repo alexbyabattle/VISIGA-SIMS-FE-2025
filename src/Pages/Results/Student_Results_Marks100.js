@@ -68,9 +68,9 @@ const StudentResultsMarks100 = () => {
 
   const getDivisionLabel = (points) => {
     if (points >= 1 && points <= 17) return `Division I • ${points}`;
-    if (points <= 20) return `Division II • ${points}`;
-    if (points <= 24) return `Division III • ${points}`;
-    if (points <= 29) return `Division IV • ${points}`;
+    if (points <= 21) return `Division II • ${points}`;
+    if (points <= 25) return `Division III • ${points}`;
+    if (points <= 33) return `Division IV • ${points}`;
     return `Division 0 • ${points}`;
   };
 
@@ -259,7 +259,7 @@ const StudentResultsMarks100 = () => {
             <Box display="flex" gap={4} flexWrap="wrap">
               <Box>
                 <Typography variant="subtitle2" fontWeight="bold">
-                  STUDENT NAME
+                  SEMINARIAN NAME
                 </Typography>
                 <Typography variant="body1">{studentResult.studentName}</Typography>
               </Box>

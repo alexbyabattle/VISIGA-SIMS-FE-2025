@@ -56,7 +56,7 @@ const Dashboard = () => {
   return (
     <Box m="20px">
       <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Header title="DASHBOARD" subtitle="Welcome to Visiga SIMS" />
+        <Header title="DASHBOARD" subtitle="Mfumo wa matokeo wa visiga seminary(VISIGA SIMS)" />
       </Box>
 
       <Box
@@ -69,11 +69,11 @@ const Dashboard = () => {
           <>
             <Box backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
               <StatBox
-                title="RESULTS"
-                subtitle="View Results of your seminarians"
+                title="MATOKEO & RIPOTI"
+                subtitle="Tazama matokeo & ripoti ya mwanao"
                 progress={
                   <Button variant="contained" color="secondary" onClick={openParentsViewResultPage}>
-                    RESULTS
+                    MATOKEO
                   </Button>
                 }
                 increase="VISIGA-SIMS"
@@ -83,11 +83,11 @@ const Dashboard = () => {
 
             <Box backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
               <StatBox
-                title="SEMINARIANS INFO"
-                subtitle="Add Seminarians Information to the system "
+                title="TAARIFA ZA MSEMINARI"
+                subtitle="Tazama & ongezea taarifa muhimu za mseminari "
                 progress={
                   <Button variant="contained" color="secondary" onClick={openEditSeminariansInformation}>
-                    ADD INFO
+                    TAARIFA
                   </Button>
                 }
                 increase="VISIGA-SIMS"
@@ -97,11 +97,11 @@ const Dashboard = () => {
 
             <Box backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
               <StatBox
-                title="VIEW SCHOOL TIMETABLE"
-                subtitle="View school timetable "
+                title="RATIBA YA SEMINARI"
+                subtitle="Tazama ratiba ya seminari "
                 progress={
                   <Button variant="contained" color="secondary" onClick={openSchoolTimetable}>
-                    VIEW
+                    RATIBA
                   </Button>
                 }
                 increase="VISIGA-SIMS"
@@ -111,11 +111,11 @@ const Dashboard = () => {
 
             <Box backgroundColor={colors.primary[400]} display="flex" alignItems="center" justifyContent="center">
               <StatBox
-                title="FEE INFO"
-                subtitle=" View school fee , paid amount and amount left"
+                title=" ADA & MICHANGO"
+                subtitle=" Tazama taarifa kuhusu michango na Ada ya seminary"
                 progress={
                   <Button variant="contained" color="secondary" >
-                    VIEW FEE
+                    ADA
                   </Button>
                 }
                 increase="VISIGA-SIMS"

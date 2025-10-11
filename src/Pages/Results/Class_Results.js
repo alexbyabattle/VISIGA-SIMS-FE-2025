@@ -70,7 +70,7 @@ const ClassResults = () => {
       } finally {
         setIsLoading(false);
       }
-    };
+    };  
     loadResults();
   }, [classId, examinationTypeId]);
 
@@ -190,7 +190,18 @@ const ClassResults = () => {
           // 🔥 Sort students by position (1 → last)
           .sort((a, b) => (a.position ?? Infinity) - (b.position ?? Infinity));
 
-        setGroupedResults(processed);
+        // Extract class and examination info from the first result if available
+        const firstResult = results.data?.[0];
+        const className = results.className || firstResult?.className || "N/A";
+        const examinationType = results.examinationType || firstResult?.examinationType || "N/A";
+        
+        const processedWithDetails = processed.map(student => ({
+          ...student,
+          className: className,
+          examinationType: examinationType
+        }));
+
+        setGroupedResults(processedWithDetails);
       } else {
         setGroupedResults([]);
       }
@@ -401,7 +412,9 @@ const ClassResults = () => {
   return (
     <Box m="20px">
       <Box p={2} ml={2} mr={2}>
-        <Header title="CLASS RESULTS" />
+        <Header
+          title={`CLASS RESULTS FOR CLASS NAME: ${groupedResults[0]?.className || "N/A"} | EXAM-NAME: ${groupedResults[0]?.examinationType || "N/A"}`}
+        />
         <Box mb={2} display="flex" justifyContent="flex-end">
           <ExportPDFButton 
             groupedResults={groupedResults} 

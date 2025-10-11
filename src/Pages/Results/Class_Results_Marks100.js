@@ -49,10 +49,9 @@ const ClassResultsMarks100 = () => {
   const getGradeFromMarks = (marks) => {
     if (marks >= 75) return "A";
     if (marks >= 65) return "B";
-    if (marks >= 55) return "C";
-    if (marks >= 45) return "D";
-    if (marks >= 35) return "E";
-    return "F";
+    if (marks >= 45) return "C";
+    if (marks >= 30) return "D";
+    return "E";
   };
 
   const getGradePoint = (grade) => {
@@ -67,8 +66,6 @@ const ClassResultsMarks100 = () => {
         return 4;
       case "E":
         return 5;
-      case "F":
-        return 6;
       default:
         return 0;
     }
@@ -102,6 +99,7 @@ const ClassResultsMarks100 = () => {
       setIsLoading(true);
       try {
         const data = await fetchClassResults(classId, examinationTypeId);
+        console.log("Fetched results data:", data); // Debug log
         setResults(data);
       } catch (e) {
         console.error("Error loading results:", e);
@@ -225,8 +223,19 @@ const ClassResultsMarks100 = () => {
         )
         .sort((a, b) => b.average - a.average); // ⬅️ Sort highest average first
 
-      setGroupedResults(processed);
-      localStorage.setItem("classResultsMarks100", JSON.stringify(processed));
+      // Extract class and examination info from the first result if available
+      const firstResult = results.data?.[0];
+      const className = results.className || firstResult?.className || "N/A";
+      const examinationType = results.examinationType || firstResult?.examinationType || "N/A";
+      
+      const processedWithDetails = processed.map(student => ({
+        ...student,
+        className: className,
+        examinationType: examinationType
+      }));
+
+      setGroupedResults(processedWithDetails);
+      localStorage.setItem("classResultsMarks100", JSON.stringify(processedWithDetails));
     }
   }, [results]);
 
@@ -397,9 +406,16 @@ const ClassResultsMarks100 = () => {
   return (
     <Box m="20px">
       <Box p={2} ml={2} mr={2}>
-        <Header title="CLASS RESULTS" />
+        <Header
+          title={`CLASS RESULTS FOR CLASS NAME: ${groupedResults[0]?.className || "N/A"} | EXAM-NAME: ${groupedResults[0]?.examinationType || "N/A"}`}
+        />
         <Box mb={2} display="flex" justifyContent="flex-end">
-          <ExportPDFButton groupedResults={groupedResults} />
+          <ExportPDFButton
+            groupedResults={groupedResults}
+            isClassResults={true}
+            className={groupedResults[0]?.className || "N/A"}
+            examinationType={groupedResults[0]?.examinationType || "N/A"}
+          />
         </Box>
 
         {isLoading ? (

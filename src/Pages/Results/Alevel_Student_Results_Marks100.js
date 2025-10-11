@@ -40,22 +40,23 @@ const AlevelStudentResultsMarks100 = () => {
 
   // ---------- Grades ----------
   const getGrade = (marks) => {
-    if (marks >= 75) return "A";
-    if (marks >= 65) return "B";
-    if (marks >= 55) return "C";
-    if (marks >= 45) return "D";
-    if (marks >= 35) return "E";
+    if (marks >= 80) return "A";
+    if (marks >= 70) return "B";
+    if (marks >= 60) return "C";
+    if (marks >= 50) return "D";
+    if (marks >= 40) return "E";
+    if (marks >= 35) return "S";
     return "F";
   };
 
   const getGradePoint = (grade) =>
-    ({ A: 1, B: 2, C: 3, D: 4, E: 5, F: 6 }[grade] || 0);
+    ({ A: 1, B: 2, C: 3, D: 4, E: 5, S: 6,  F: 7 }[grade] || 0);
 
   const getDivisionLabel = (points) => {
-    if (points >= 1 && points <= 9) return `Division I • ${points}`;
-    if (points >= 10 && points <= 12) return `Division II • ${points}`;
-    if (points >= 13 && points <= 21) return `Division III • ${points}`;
-    if (points >= 22 && points <= 24) return `Division IV • ${points}`;
+    if (points >= 1 && points <= 7) return `Division I • ${points}`;
+    if (points >= 8 && points <= 14) return `Division II • ${points}`;
+    if (points >= 15 && points <= 21) return `Division III • ${points}`;
+    if (points >= 22 && points <= 28) return `Division IV • ${points}`;
     return `Division 0 • ${points}`;
   };
 
@@ -121,10 +122,18 @@ const AlevelStudentResultsMarks100 = () => {
 
   const determineDivision = (subjects) => {
     const points = subjects
-      .filter((s) => CORE_SUBJECTS.includes(s.subject))
-      .map((s) => getGradePoint(s.grade));
-    const usePoints =
-      points.length > 7 ? points.sort((a, b) => a - b).slice(0, 7) : points;
+      .filter((s) => CORE_SUBJECTS.includes(s.subject) && s.grade)
+      .map((s) => getGradePoint(s.grade))
+      .filter(point => point > 0); // Only include valid points
+    
+    // For A-Level, we need at least 2 subjects to calculate division
+    if (points.length < 2) return 0;
+    
+    // Take the best 7 subjects (or all if less than 7)
+    const usePoints = points.length > 7 
+      ? points.sort((a, b) => a - b).slice(0, 7) 
+      : points;
+    
     return usePoints.reduce((a, b) => a + b, 0);
   };
 
@@ -166,7 +175,10 @@ const AlevelStudentResultsMarks100 = () => {
         grade: val.final?.grade,
       }))
     );
-    const division = getDivisionLabel(divisionPoints);
+    
+    // Validate division points
+    const validDivisionPoints = divisionPoints > 0 ? divisionPoints : 0;
+    const division = getDivisionLabel(validDivisionPoints);
 
     return {
       id: studentData.id,
@@ -266,7 +278,7 @@ const AlevelStudentResultsMarks100 = () => {
             <Box display="flex" gap={4} flexWrap="wrap">
               <Box>
                 <Typography variant="subtitle2" fontWeight="bold">
-                  STUDENT NAME
+                  SEMINARIAN NAME
                 </Typography>
                 <Typography variant="body1">{studentResult.studentName}</Typography>
               </Box>

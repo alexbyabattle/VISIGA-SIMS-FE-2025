@@ -134,7 +134,7 @@ const ParentViewStudentResults = () => {
             fontWeight="bold"
             sx={{ fontSize: { xs: '1rem', sm: '1.2rem', md: '1.5rem' } }}
           >
-            RESULTS OF THE SEMINARIANS
+            RESULTS OF THE SEMINARIAN
           </Typography>
         </Box>
 
@@ -209,7 +209,7 @@ const ParentViewStudentResults = () => {
       {/* Students */}
       <Typography
         variant="h4"
-        align="start"
+        align="left"
         sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem', md: '2rem' }, mb: 2 }}
       >
         VIEW RESULTS OF
@@ -246,7 +246,7 @@ const ParentViewStudentResults = () => {
               }}
             >
               {/* Student Info with Labels */}
-              <Typography variant="subtitle2"><strong>Student Name:</strong> {student.name || 'N/A'}</Typography>
+              <Typography variant="subtitle2"><strong>Seminarian Name:</strong> {student.name || 'N/A'}</Typography>
               <Typography variant="subtitle2"><strong>Class:</strong> {student.className || 'N/A'}</Typography>
               <Typography variant="subtitle2"><strong>Parish:</strong> {student.parishName || 'N/A'}</Typography>
               <Typography variant="subtitle2"><strong>Archdiocese:</strong> {student.archdiocese || 'N/A'}</Typography>

@@ -3,29 +3,38 @@ import 'jspdf-autotable';
 
 const generateTermResultsPDF = (results, termName, className) => {
   const doc = new jsPDF('landscape', 'mm', 'a4');
-  
-  // Set up the document
+
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  
-  // Header
+
+  // ===== HEADER =====
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text('ST. MARY\'S JUNIOR SEMINARY - VISIGA', pageWidth / 2, 15, { align: 'center' });
-  
-  doc.setFontSize(16);
+  doc.text("ST. MARY'S JUNIOR SEMINARY - VISIGA", pageWidth / 2, 12, { align: 'center' });
+
+  doc.setFontSize(15);
   doc.setFont('helvetica', 'normal');
-  doc.text('CLASS TERM RESULTS REPORT', pageWidth / 2, 25, { align: 'center' });
+  doc.text('CLASS TERM RESULTS REPORT', pageWidth / 2, 19, { align: 'center' });
+
+  doc.setFontSize(11);
+doc.setFont('helvetica', 'normal');
+
+// Left side: Class name
+doc.text(`Class: ${className || ''}`, 15, 25);
+
+// Right side: Generated on (aligned to right edge)
+const generatedOn = new Date().toLocaleString();
+const generatedText = `Generated on: ${generatedOn}`;
+
+// Calculate text width to align it from the right margin
+const textWidth = doc.getTextWidth(generatedText);
+doc.text(generatedText, pageWidth - textWidth - 15, 25);
+
+
   
-  doc.setFontSize(12);
-  doc.text(`Class: ${className || ''}`, 20, 35);
-  doc.text(`Term: ${termName || ''}`, pageWidth - 60, 35);
   
-  // Get current date
-  const currentDate = new Date().toLocaleDateString();
-  doc.text(`Generated on: ${currentDate}`, pageWidth - 60, 45);
-  
-  // Subjects that should NOT be displayed
+
+  // ===== SUBJECTS (excluding papers) =====
   const excludedSubjects = [
     "CHEMISTRY-1", "CHEMISTRY-2", "CHEMISTRY-3",
     "PHYSICS-1", "PHYSICS-2", "PHYSICS-3",
@@ -35,131 +44,98 @@ const generateTermResultsPDF = (results, termName, className) => {
     "MATHEMATICS-1", "MATHEMATICS-2",
     "ECONOMICS-1", "ECONOMICS-2"
   ];
-  
-  // Collect all subject names except excluded ones
+
   const subjectSet = new Set();
   results.forEach((student) => {
     Object.keys(student.subjects || {}).forEach((subj) => {
-      if (!excludedSubjects.includes(subj)) {
-        subjectSet.add(subj);
-      }
+      if (!excludedSubjects.includes(subj)) subjectSet.add(subj);
     });
   });
-  
   const subjectNames = Array.from(subjectSet);
-  
-  // Helper function to check if subject has results
+
+  // ===== HELPERS =====
   const hasSubjectResults = (subj) =>
-    subj.exam10Average > 0 ||
-    subj.exam40Average > 0 ||
-    subj.exam50Marks > 0;
-  
-  // Helper function to get subject marks for PDF
+    subj.exam10Average > 0 || subj.exam40Average > 0 || subj.exam50Marks > 0;
+
   const getSubjectMarks = (subj) => {
     if (!subj || !hasSubjectResults(subj)) return '';
-    return subj.totalMarks || 0;
+    return subj.totalMarks || '';
   };
-  
-  // Check if Index, Combination, and Division columns should be shown
-  const checkColumnEmpty = (columnKey, getValue) => {
-    return results.every(student => {
+
+  const checkColumnEmpty = (key, getValue) =>
+    results.every(student => {
       const value = getValue(student);
       return !value || value === 'N/A' || value === '';
     });
-  };
-  
-  const isIndexEmpty = checkColumnEmpty('Index', (student) => student.studentNumber);
-  const isCombinationEmpty = checkColumnEmpty('Combination', (student) => student.combination);
-  const isDivisionEmpty = checkColumnEmpty('Division', (student) => student.division);
-  
-  // Prepare headers
-  const baseHeaders = ["No", "Student Name"];
-  if (!isIndexEmpty) { baseHeaders.push("Index Number"); }
-  if (!isCombinationEmpty) { baseHeaders.push("Combination"); }
+
+  const isIndexEmpty = checkColumnEmpty('Index', s => s.studentNumber);
+  const isCombinationEmpty = checkColumnEmpty('Combination', s => s.combination);
+  const isDivisionEmpty = checkColumnEmpty('Division', s => s.division);
+
+  // ===== HEADERS =====
+  const baseHeaders = ['No', 'Student Name'];
+  if (!isIndexEmpty) baseHeaders.push('Index Number');
+  if (!isCombinationEmpty) baseHeaders.push('Combination');
   baseHeaders.push(...subjectNames);
-  baseHeaders.push("Total Marks", "Average");
-  if (!isDivisionEmpty) { baseHeaders.push("Division"); }
-  baseHeaders.push("Position");
-  
-  // Prepare data rows
+  baseHeaders.push('Total Marks', 'Average');
+  if (!isDivisionEmpty) baseHeaders.push('Division');
+  baseHeaders.push('Position');
+
+  // ===== ROWS =====
   const tableData = results.map((student, index) => {
-    const rowData = [index + 1, student.studentName || ''];
-    
-    if (!isIndexEmpty) { 
-      rowData.push(student.studentNumber || ''); 
-    }
-    
-    if (!isCombinationEmpty) { 
-      rowData.push(student.combination || ''); 
-    }
-    
-    // Add subject marks
+    const row = [index + 1, student.studentName || ''];
+
+    if (!isIndexEmpty) row.push(student.studentNumber || '');
+    if (!isCombinationEmpty) row.push(student.combination || '');
+
     subjectNames.forEach(subject => {
       const subj = student.subjects?.[subject];
-      const marks = getSubjectMarks(subj);
-      rowData.push(marks);
+      row.push(getSubjectMarks(subj));
     });
-    
-    // Add summary data
-    rowData.push(student.totalMarks || 0);
-    rowData.push(student.average || 0);
-    
-    if (!isDivisionEmpty) { 
-      rowData.push(student.division || ''); 
-    }
-    
-    rowData.push(student.positionText || '');
-    
-    return rowData;
+
+    row.push(student.totalMarks || 0);
+    row.push(student.average || 0);
+    if (!isDivisionEmpty) row.push(student.division || '');
+    row.push(student.positionText || '');
+
+    return row;
   });
-  
-  // Set up column widths
-  const fixedWidths = { 
-    'No': 15, 
-    'Student Name': 50 
+
+  // ===== COLUMN WIDTHS =====
+  const fixedWidths = {
+    'No': 12,
+    'Student Name': 45,
   };
-  
-  if (!isIndexEmpty) { 
-    fixedWidths['Index Number'] = 25; 
-  }
-  
-  if (!isCombinationEmpty) { 
-    fixedWidths['Combination'] = 30; 
-  }
-  
-  if (!isDivisionEmpty) { 
-    fixedWidths['Division'] = 25; 
-  }
-  
-  // Calculate dynamic widths for subjects
-  const subjectWidth = Math.max(20, Math.min(30, (pageWidth - 200) / subjectNames.length));
-  subjectNames.forEach(subject => {
-    fixedWidths[subject] = subjectWidth;
-  });
-  
-  fixedWidths['Total Marks'] = 25;
-  fixedWidths['Average'] = 20;
-  fixedWidths['Position'] = 25;
-  
-  // Generate the table
+  if (!isIndexEmpty) fixedWidths['Index Number'] = 25;
+  if (!isCombinationEmpty) fixedWidths['Combination'] = 30;
+  if (!isDivisionEmpty) fixedWidths['Division'] = 22;
+
+  const subjectWidth = Math.max(18, Math.min(25, (pageWidth - 200) / subjectNames.length));
+  subjectNames.forEach(subj => (fixedWidths[subj] = subjectWidth));
+
+  fixedWidths['Total Marks'] = 22;
+  fixedWidths['Average'] = 18;
+  fixedWidths['Position'] = 22;
+
+  // ===== TABLE (reduced spacing) =====
   doc.autoTable({
     head: [baseHeaders],
     body: tableData,
-    startY: 55,
+    startY: 33, // Adjusted to leave room for “Generated on”
     styles: {
       fontSize: 8,
-      cellPadding: 2,
+      cellPadding: 1.5,
       overflow: 'linebreak',
       halign: 'center',
-      valign: 'middle'
+      valign: 'middle',
     },
     headStyles: {
       fillColor: [41, 128, 185],
       textColor: 255,
-      fontStyle: 'bold'
+      fontStyle: 'bold',
     },
     alternateRowStyles: {
-      fillColor: [245, 245, 245]
+      fillColor: [248, 248, 248],
     },
     columnStyles: {
       'No': { halign: 'center', cellWidth: fixedWidths['No'] },
@@ -169,57 +145,21 @@ const generateTermResultsPDF = (results, termName, className) => {
       'Total Marks': { halign: 'center', cellWidth: fixedWidths['Total Marks'] },
       'Average': { halign: 'center', cellWidth: fixedWidths['Average'] },
       'Division': { halign: 'center', cellWidth: fixedWidths['Division'] },
-      'Position': { halign: 'center', cellWidth: fixedWidths['Position'] }
+      'Position': { halign: 'center', cellWidth: fixedWidths['Position'] },
     },
-    didDrawPage: (data) => {
-      // Add page numbers
+    didDrawPage: () => {
       const pageCount = doc.internal.getNumberOfPages();
       const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
-      
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.text(`Page ${currentPage} of ${pageCount}`, pageWidth - 20, pageHeight - 10);
-    }
+    },
   });
-  
-  // Add footer information
-  const finalY = doc.lastAutoTable.finalY || 55;
-  const footerY = Math.min(finalY + 20, pageHeight - 20);
-  
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Report Summary:', 20, footerY);
-  
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Total Students: ${results.length}`, 20, footerY + 8);
-  
-  // Calculate statistics
-  const studentsWithResults = results.filter(student => 
-    Object.values(student.subjects || {}).some(subj => hasSubjectResults(subj))
-  );
-  
-  if (studentsWithResults.length > 0) {
-    const totalMarks = studentsWithResults.reduce((sum, student) => sum + (student.totalMarks || 0), 0);
-    const averageMarks = totalMarks / studentsWithResults.length;
-    
-    doc.text(`Students with Results: ${studentsWithResults.length}`, 20, footerY + 16);
-    doc.text(`Average Total Marks: ${averageMarks.toFixed(1)}`, 20, footerY + 24);
-  }
-  
-  // Add legend
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Legend:', pageWidth - 60, footerY);
-  
-  doc.setFont('helvetica', 'normal');
-  doc.text('• Exam10 Avg: Average of 10% exams', pageWidth - 60, footerY + 8);
-  doc.text('• Exam40 Avg: Average of 40% exams', pageWidth - 60, footerY + 16);
-  doc.text('• Exam50 Marks: Marks from 50% exam', pageWidth - 60, footerY + 24);
-  doc.text('• Total: Sum of all exam components', pageWidth - 60, footerY + 32);
-  
-  // Save the PDF
-  const fileName = `Term_Results_${className || 'Class'}_${termName || 'Term'}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+  // ===== SAVE FILE =====
+  const fileName = `Term_Results_${className || 'Class'}_${termName || 'Term'}_${new Date()
+    .toISOString()
+    .split('T')[0]}.pdf`;
   doc.save(fileName);
 };
 

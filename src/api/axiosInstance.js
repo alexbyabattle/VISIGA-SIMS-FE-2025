@@ -2,8 +2,8 @@
 import axios from 'axios';
 import { getUserFromCookies } from '../utils/Cookie-utils';
 
-//const API_BASE_URL = 'http://192.168.159.88:8086/api/v1';
-const API_BASE_URL = 'http://localhost:8086/api/v1';
+const API_BASE_URL = 'http://192.168.18.13:8086/api/v1';
+//const API_BASE_URL = 'http://localhost:8086/api/v1';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,

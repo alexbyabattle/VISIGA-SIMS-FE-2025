@@ -1,0 +1,52 @@
+{
+  "production": {
+    "buildCommand": "npm run build",
+    "outputDirectory": "build",
+    "serverConfig": {
+      "type": "nginx",
+      "config": {
+        "tryFiles": "$uri $uri/ /index.html",
+        "cacheStatic": "1y",
+        "gzip": true,
+        "securityHeaders": true
+      }
+    },
+    "environment": {
+      "NODE_ENV": "production",
+      "GENERATE_SOURCEMAP": "false",
+      "REACT_APP_API_URL": "https://your-production-api.com"
+    },
+    "optimizations": {
+      "minify": true,
+      "treeShaking": true,
+      "codeSplitting": true,
+      "lazyLoading": true
+    }
+  },
+  "staging": {
+    "buildCommand": "npm run build",
+    "outputDirectory": "build",
+    "serverConfig": {
+      "type": "apache",
+      "config": {
+        "rewriteEngine": "On",
+        "rewriteBase": "/",
+        "fallbackToIndex": true
+      }
+    },
+    "environment": {
+      "NODE_ENV": "production",
+      "GENERATE_SOURCEMAP": "true",
+      "REACT_APP_API_URL": "https://your-staging-api.com"
+    }
+  },
+  "development": {
+    "buildCommand": "npm start",
+    "outputDirectory": "public",
+    "environment": {
+      "NODE_ENV": "development",
+      "GENERATE_SOURCEMAP": "true",
+      "REACT_APP_API_URL": "http://localhost:8086"
+    }
+  }
+}

@@ -51,6 +51,7 @@ const AlevelClassResultsMarks100 = () => {
       setIsLoading(true);
       try {
         const data = await fetchClassResults(classId, examinationTypeId);
+        console.log("Fetched results data:", data); // Debug log
         setResults(data);
       } catch (e) {
         console.error("Error fetching results:", e);
@@ -64,21 +65,22 @@ const AlevelClassResultsMarks100 = () => {
 
   // ---------- Grades ----------
   const getGrade = (marks) => {
-    if (marks >= 75) return "A";
-    if (marks >= 65) return "B";
-    if (marks >= 55) return "C";
-    if (marks >= 45) return "D";
-    if (marks >= 35) return "E";
+    if (marks >= 80) return "A";
+    if (marks >= 70) return "B";
+    if (marks >= 60) return "C";
+    if (marks >= 50) return "D";
+    if (marks >= 40) return "E";
+    if (marks >= 35) return "S";
     return "F";
   };
   const getGradePoint = (grade) =>
-    ({ A: 1, B: 2, C: 3, D: 4, E: 5, F: 6 }[grade] || 0);
+    ({ A: 1, B: 2, C: 3, D: 4, E: 5, S:6,  F: 7 }[grade] || 0);
 
   const getDivisionLabel = (points) => {
     if (points >= 1 && points <= 9) return `Division 1 .${parseFloat(points).toFixed(1).replace(/\.0$/, '')}`;
     if (points >= 10 && points <= 12) return `Division 2 .${parseFloat(points).toFixed(1).replace(/\.0$/, '')}`;
-    if (points >= 13 && points <= 21) return `Division 3 .${parseFloat(points).toFixed(1).replace(/\.0$/, '')}`;
-    if (points >= 22 && points <= 24) return `Division 4 .${parseFloat(points).toFixed(1).replace(/\.0$/, '')}`;
+    if (points >= 13 && points <= 17) return `Division 3 .${parseFloat(points).toFixed(1).replace(/\.0$/, '')}`;
+    if (points >= 18 && points <= 21) return `Division 4 .${parseFloat(points).toFixed(1).replace(/\.0$/, '')}`;
     return `Division 0 .${parseFloat(points).toFixed(1).replace(/\.0$/, '')}`;
   };
 
@@ -196,9 +198,20 @@ const AlevelClassResultsMarks100 = () => {
         (s.final?.value > 0) || (s.parts && s.parts.length > 0)
       )
     );
+    
+    // Extract class and examination info from the first result if available
+    const firstResult = results.data?.[0];
+    const className = results.className || firstResult?.className || "N/A";
+    const examinationType = results.examinationType || firstResult?.examinationType || "N/A";
+    
     const sorted = valid
       .sort((a, b) => b.average - a.average)
-      .map((s, i) => ({ ...s, position: i + 1 }));
+      .map((s, i) => ({ 
+        ...s, 
+        position: i + 1,
+        className: className,
+        examinationType: examinationType
+      }));
     setGroupedResults(sorted);
   }, [results]);
 
@@ -364,7 +377,10 @@ const AlevelClassResultsMarks100 = () => {
   return (
     <Box m="20px">
       <Box p={2} ml={2} mr={2}>
-        <Header title="CLASS RESULTS" />
+        <Header
+          title={`CLASS RESULTS FOR CLASS NAME: ${groupedResults[0]?.className || "N/A"} | EXAM-NAME: ${groupedResults[0]?.examinationType || "N/A"}`}
+        />
+        
         <Box mb={2} display="flex" justifyContent="flex-end">
           <ExportPDFButton
             groupedResults={groupedResults}
