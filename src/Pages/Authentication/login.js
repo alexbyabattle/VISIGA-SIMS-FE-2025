@@ -1,9 +1,9 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { useFormik } from 'formik';
-import { Box, Button, TextField, Typography, useTheme, IconButton, Grid, Link } from '@mui/material';
+import { Box, Button, TextField, Typography, useTheme, IconButton, Grid, Link, InputAdornment } from '@mui/material';
 import { ColorModeContext } from '../../theme';
 import { Link as RouterLink } from 'react-router-dom';
-import { Brightness7, Brightness4 } from '@mui/icons-material';
+import { Brightness7, Brightness4, Visibility, VisibilityOff } from '@mui/icons-material';
 import { AuthenticationSchema } from '../../schemas/authentication-schema';
 import AuthContainerForm from '../../components/AuthContainerForm';
 import { useAuth } from '../../hooks/useAuth';
@@ -17,9 +17,14 @@ const initialValues = {
 const Login = () => {
   const { signIn } = useAuth();
   const { isLoading } = useAuthenticationService();
+  const [showPassword, setShowPassword] = useState(false);
 
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
+
+  const handleClickShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
 
   const handleFormSubmit = async (values, { setSubmitting }) => {
     try {
@@ -73,11 +78,25 @@ const Login = () => {
               <TextField
                 fullWidth
                 variant="filled"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 label="Password"
                 {...formik.getFieldProps('password')}
                 error={formik.touched.password && Boolean(formik.errors.password)}
                 helperText={formik.touched.password && formik.errors.password}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={handleClickShowPassword}
+                        edge="end"
+                        color="inherit"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
             </Grid>
           </Grid>
